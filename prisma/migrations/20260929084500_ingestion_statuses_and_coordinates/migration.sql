@@ -1,0 +1,7 @@
+-- AlterEnum
+ALTER TYPE "VitalStatus" RENAME VALUE 'DEAD' TO 'DECEASED';
+ALTER TYPE "VitalStatus" ADD VALUE 'DETAINED' BEFORE 'UNKNOWN';
+
+-- AlterTable
+ALTER TABLE "raw_records" ADD COLUMN "latitude" DOUBLE PRECISION;
+ALTER TABLE "raw_records" ADD COLUMN "longitude" DOUBLE PRECISION;

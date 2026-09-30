@@ -1,0 +1,191 @@
+// Entity resolution (record linkage) for missing-person reports.
+//
+// RawRecord is write-once evidence copied from an NGO file. Disagreements are
+// flagged on ProfileLinkage and do not change those rows. MasterProfile
+// resolved columns are a derived view: ResolutionService may rebuild them,
+// and fieldProvenance records which raw record supplied each value.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VitalStatus {
+  ALIVE
+  MISSING
+  DECEASED
+  DETAINED
+  DECEASED_OR_MISSING
+  CONFLICT_EVENT
+  FATALITY_EVENT
+  UNKNOWN
+}
+
+enum SourceFileFormat {
+  CSV
+  PDF
+  EXCEL
+  JSON
+  OTHER
+}
+
+enum IngestionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+/// PROVISIONAL: one source, or links below the corroboration bar.
+/// CONFIRMED: two or more high-confidence links and no open contradiction.
+/// DISPUTED: at least one linked raw record contradicts another.
+enum ProfileStatus {
+  PROVISIONAL
+  CONFIRMED
+  DISPUTED
+}
+
+enum MatchMethod {
+  DETERMINISTIC
+  FUZZY
+  MANUAL
+}
+
+enum LinkReviewStatus {
+  AUTO_LINKED
+  PENDING_HUMAN_REVIEW
+}
+
+/// Publisher of observations. reliabilityScore is a prior in [0, 1] used when
+/// choosing which source supplies a golden-record field. It never deletes a
+/// lower-scoring observation.
+model Organization {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String
+  acronym          String?  @unique
+  mandate          String?  @db.Text
+  url              String?
+  methodology      String?  @db.Text
+  reliabilityScore Float    @default(0.5)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  sourceFiles SourceFile[]
+  rawRecords  RawRecord[]
+
+  @@index([name])
+  @@map("organizations")
+}
+
+/// Pointer to an uploaded file. File bytes stay in object storage; this row
+/// is the provenance anchor for every record extracted from that file.
+model SourceFile {
+  id               String           @id @default(uuid()) @db.Uuid
+  organizationId   String           @db.Uuid
+  originalFilename String
+  storageKey       String
+  format           SourceFileFormat
+  mimeType         String?
+  checksumSha256   String
+  byteSize         Int?
+  ingestionStatus  IngestionStatus  @default(PENDING)
+  recordCount      Int              @default(0)
+  errorMessage     String?          @db.Text
+  metadata         Json?
+  uploadedAt       DateTime         @default(now())
+  processedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  rawRecords   RawRecord[]
+
+  @@unique([organizationId, checksumSha256])
+  @@index([organizationId, uploadedAt])
+  @@map("source_files")
+}
+
+/// One observation as extracted. payload is the original document fragment.
+/// The extracted columns are a comparable projection written at insert time.
+model RawRecord {
+  id                      String      @id @default(uuid()) @db.Uuid
+  sourceFileId            String      @db.Uuid
+  organizationId          String      @db.Uuid
+  sourceLocator           String?
+  payload                 Json
+  extractedName           String?
+  extractedNameNormalized String?
+  vitalStatus             VitalStatus @default(UNKNOWN)
+  location                String?
+  latitude                Float?
+  longitude               Float?
+  birthYear               Int?
+  eventDate               DateTime?   @db.Date
+  reportedAt              DateTime?
+  ingestedAt              DateTime    @default(now())
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  sourceFile   SourceFile      @relation(fields: [sourceFileId], references: [id], onDelete: Restrict)
+  linkage      ProfileLinkage?
+
+  @@unique([sourceFileId, sourceLocator])
+  @@index([organizationId])
+  @@index([extractedNameNormalized])
+  @@index([birthYear])
+  @@index([vitalStatus, eventDate])
+  @@map("raw_records")
+}
+
+/// Golden record. knownNames keeps every linked spelling. resolved* columns
+/// are recomputed; they are not a second copy of the source files.
+model MasterProfile {
+  id                String        @id @default(uuid()) @db.Uuid
+  canonicalName     String?
+  knownNames        String[]      @default([])
+  resolvedStatus    VitalStatus   @default(UNKNOWN)
+  resolvedLocation  String?
+  resolvedBirthYear Int?
+  nameBlockKey      String?
+  resolvedEventDate DateTime?     @db.Date
+  profileStatus     ProfileStatus @default(PROVISIONAL)
+  hasConflict       Boolean       @default(false)
+  fieldProvenance   Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  linkages ProfileLinkage[]
+
+  @@index([canonicalName])
+  @@index([nameBlockKey])
+  @@index([resolvedBirthYear])
+  @@index([resolvedStatus])
+  @@index([hasConflict])
+  @@map("master_profiles")
+}
+
+/// Commits many raw records to one person. rawRecordId is unique so the same
+/// observation cannot define two people. conflictFlag is true when this
+/// record contradicts another record already linked to the same profile.
+model ProfileLinkage {
+  id              String      @id @default(uuid()) @db.Uuid
+  masterProfileId String      @db.Uuid
+  rawRecordId     String      @unique @db.Uuid
+  confidenceScore Float
+  conflictFlag    Boolean     @default(false)
+  conflictReason  String?     @db.Text
+  matchMethod     MatchMethod     @default(FUZZY)
+  reviewStatus    LinkReviewStatus @default(AUTO_LINKED)
+  matchedOn       Json?
+  linkedBy        String?
+  linkedAt        DateTime    @default(now())
+
+  masterProfile MasterProfile @relation(fields: [masterProfileId], references: [id], onDelete: Restrict)
+  rawRecord     RawRecord     @relation(fields: [rawRecordId], references: [id], onDelete: Restrict)
+
+  @@index([masterProfileId, conflictFlag])
+  @@index([reviewStatus])
+  @@map("profile_linkages")
+}
