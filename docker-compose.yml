@@ -1,0 +1,76 @@
+name: migrants
+
+services:
+  api:
+    build: .
+    image: migrants-api
+    container_name: migrants-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://migrants:${POSTGRES_PASSWORD}@postgres:5432/migrants?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "127.0.0.1:3002:3000"
+    volumes:
+      - migrants-uploads:/app/uploads
+      - migrants-storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - migrants
+      - proxy
+    mem_limit: 1g
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: migrants-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: migrants
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: migrants
+    volumes:
+      - migrants-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U migrants -d migrants"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - migrants
+    mem_limit: 1g
+
+  redis:
+    image: redis:7-alpine
+    container_name: migrants-redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1"]
+    volumes:
+      - migrants-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - migrants
+    mem_limit: 256m
+
+networks:
+  migrants:
+    name: migrants
+  proxy:
+    external: true
+    name: ${NGINX_DOCKER_NETWORK}
+
+volumes:
+  migrants-postgres:
+  migrants-redis:
+  migrants-uploads:
+  migrants-storage:

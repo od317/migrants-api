@@ -9,14 +9,7 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-      'http://localhost:3003',
-      'http://127.0.0.1:3003',
-    ],
+    origin: allowedOrigins(),
     methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'x-api-key'],
   });
@@ -40,6 +33,22 @@ async function bootstrap(): Promise<void> {
   SwaggerModule.setup('docs', app, document, { useGlobalPrefix: true });
   app.enableShutdownHooks();
   await app.listen(process.env.PORT ?? 3000);
+}
+
+function allowedOrigins(): string[] {
+  const local = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+    'http://localhost:3003',
+    'http://127.0.0.1:3003',
+  ];
+  const configured = (process.env.DASHBOARD_ORIGINS ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+  return [...local, ...configured];
 }
 
 void bootstrap();
