@@ -13,14 +13,59 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  DATASET_UPLOAD_MAX_BYTES,
+  DatasetUploadService,
+  sourceFileUploadOptions,
+} from './dataset-upload.service';
 import { ProcessFileDto } from './dto/process-file.dto';
+import { UploadDatasetDto } from './dto/upload-dataset.dto';
 import { IngestionService, UPLOAD_MAX_BYTES } from './ingestion.service';
-import { UploadExceptionFilter } from './upload-exception.filter';
+import { DatasetUploadExceptionFilter, UploadExceptionFilter } from './upload-exception.filter';
 
 @ApiTags('ingestion')
 @Controller('ingestion')
 export class IngestionController {
-  constructor(private readonly ingestionService: IngestionService) {}
+  constructor(
+    private readonly ingestionService: IngestionService,
+    private readonly datasetUpload: DatasetUploadService,
+  ) {}
+
+  @Post('upload')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Upload a dataset and ingest it',
+    description:
+      'Accepts a CSV or XLSX file up to 50 MB, stores it under uploads/sources, and runs the IOM or HDX adapter. AUTO_DETECT chooses the adapter from the file headers.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file', 'datasetType'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        datasetType: {
+          type: 'string',
+          enum: ['IOM_MISSING_MIGRANTS', 'HDX_CONFLICT', 'AUTO_DETECT'],
+        },
+        organizationId: { type: 'string', format: 'uuid' },
+      },
+    },
+  })
+  @UseFilters(DatasetUploadExceptionFilter)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      ...sourceFileUploadOptions(),
+      limits: { fileSize: DATASET_UPLOAD_MAX_BYTES },
+    }),
+  )
+  uploadDataset(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: UploadDatasetDto,
+  ) {
+    return this.datasetUpload.upload(file, dto);
+  }
 
   @Post('upload/:organizationId')
   @HttpCode(HttpStatus.ACCEPTED)

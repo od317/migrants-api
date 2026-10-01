@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { access, stat } from 'node:fs/promises';
 import { basename, isAbsolute, resolve } from 'node:path';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { IngestionStatus, Prisma, SourceFileFormat, VitalStatus } from '@prisma/client';
 import csvParser from 'csv-parser';
 import { foldForCompare } from '../../common/fold-text';
@@ -52,7 +52,10 @@ export class HdxConflictEventsAdapter implements BaseIngestionAdapter {
     return folded.has('event_id_cnty') && folded.has('country') && folded.has('event_type');
   }
 
-  async processFile(filePath: string): Promise<{
+  async processFile(
+    filePath: string,
+    options?: { organizationId?: string },
+  ): Promise<{
     filePath: string;
     sourceFileId: string;
     processed: number;
@@ -64,7 +67,9 @@ export class HdxConflictEventsAdapter implements BaseIngestionAdapter {
     await access(absolute);
     this.logger.log(`Ingesting ${absolute}`);
 
-    const owner = await this.ensureHdxOrganization();
+    const owner = options?.organizationId
+      ? await this.organizationById(options.organizationId)
+      : await this.ensureHdxOrganization();
     const sourceFile = await this.ensureSourceFile(owner.id, absolute);
     await this.prisma.sourceFile.update({
       where: { id: sourceFile.id },
@@ -279,6 +284,18 @@ export class HdxConflictEventsAdapter implements BaseIngestionAdapter {
     cache.set(cacheKey, created.id);
     this.logger.log(`Organization ${created.name} created`);
     return created;
+  }
+
+  private async organizationById(id: string): Promise<{ id: string; name: string }> {
+    const existing = await this.prisma.organization.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Organization not found');
+    }
+    this.logger.log(`Organization ${existing.name} found`);
+    return existing;
   }
 
   private async ensureHdxOrganization(): Promise<{ id: string; name: string }> {

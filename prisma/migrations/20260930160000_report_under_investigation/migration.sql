@@ -1,0 +1,1 @@
+ALTER TYPE "MissingPersonReportStatus" ADD VALUE 'UNDER_INVESTIGATION';

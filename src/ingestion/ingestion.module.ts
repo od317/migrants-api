@@ -7,6 +7,7 @@ import { IomCsvAdapter } from './adapters/iom-csv.adapter';
 import { IomMissingMigrantsAdapter } from './adapters/iom-missing-migrants.adapter';
 import { VdcJsonAdapter } from './adapters/vdc-json.adapter';
 import { DATA_INGESTION_QUEUE } from './ingestion.constants';
+import { DatasetUploadService } from './dataset-upload.service';
 import { IngestionController } from './ingestion.controller';
 import { IngestionProcessor } from './ingestion.processor';
 import { IngestionService } from './ingestion.service';
@@ -25,6 +26,7 @@ import { IngestionService } from './ingestion.service';
   controllers: [IngestionController],
   providers: [
     IngestionService,
+    DatasetUploadService,
     IngestionProcessor,
     IngestionAdapterRegistry,
     IomCsvAdapter,

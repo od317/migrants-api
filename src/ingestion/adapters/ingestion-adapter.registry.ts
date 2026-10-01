@@ -1,5 +1,4 @@
-import { createReadStream } from 'node:fs';
-import { createInterface } from 'node:readline';
+import { open } from 'node:fs/promises';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { SourceFileFormat } from '@prisma/client';
 import { BaseIngestionAdapter } from './base-ingestion.adapter';
@@ -64,24 +63,14 @@ export class IngestionAdapterRegistry {
   }
 }
 
-function readCsvHeaders(filePath: string): Promise<string[]> {
-  return new Promise((resolveHeaders, reject) => {
-    const input = createReadStream(filePath, { encoding: 'utf8' });
-    const lines = createInterface({ input });
-    const finish = (headers: string[]) => {
-      lines.close();
-      input.destroy();
-      resolveHeaders(headers);
-    };
-    lines.once('line', (line) => {
-      finish(
-        line
-          .replace(/^\uFEFF/, '')
-          .split(',')
-          .map((header) => header.trim().replace(/^"|"$/g, '')),
-      );
-    });
-    lines.once('close', () => resolveHeaders([]));
-    input.on('error', reject);
-  });
+async function readCsvHeaders(filePath: string): Promise<string[]> {
+  const handle = await open(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(8192);
+    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+    const line = buffer.subarray(0, bytesRead).toString('utf8').replace(/^\uFEFF/, '').split(/\r?\n/, 1)[0] ?? '';
+    return line.split(',').map((header) => header.trim().replace(/^"|"$/g, ''));
+  } finally {
+    await handle.close();
+  }
 }

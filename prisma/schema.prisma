@@ -49,6 +49,21 @@ enum ProfileStatus {
   DISPUTED
 }
 
+enum EvidenceType {
+  LEAK
+  SURVIVOR_TESTIMONY
+  INVESTIGATIVE_REPORT
+  OFFICIAL_STATEMENT
+  SATELLITE_IMAGERY
+}
+
+enum MissingPersonReportStatus {
+  PENDING_REVIEW
+  UNDER_INVESTIGATION
+  MATCH_FOUND
+  ARCHIVED
+}
+
 enum MatchMethod {
   DETERMINISTIC
   FUZZY
@@ -75,8 +90,9 @@ model Organization {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  sourceFiles SourceFile[]
-  rawRecords  RawRecord[]
+  sourceFiles    SourceFile[]
+  rawRecords     RawRecord[]
+  incidentClaims IncidentClaim[]
 
   @@index([name])
   @@map("organizations")
@@ -127,9 +143,11 @@ model RawRecord {
   reportedAt              DateTime?
   ingestedAt              DateTime    @default(now())
 
-  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  sourceFile   SourceFile      @relation(fields: [sourceFileId], references: [id], onDelete: Restrict)
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  sourceFile   SourceFile          @relation(fields: [sourceFileId], references: [id], onDelete: Restrict)
   linkage      ProfileLinkage?
+  claims       IncidentClaim[]
+  evidence     IncidentEvidence[]
 
   @@unique([sourceFileId, sourceLocator])
   @@index([organizationId])
@@ -137,6 +155,46 @@ model RawRecord {
   @@index([birthYear])
   @@index([vitalStatus, eventDate])
   @@map("raw_records")
+}
+
+/// A source's own account of one incident. Several claims may disagree.
+model IncidentClaim {
+  id                 String    @id @default(uuid()) @db.Uuid
+  incidentId         String    @db.Uuid
+  organizationId     String    @db.Uuid
+  reportedDead       Int?
+  reportedMissing    Int?
+  reportedSurvivors  Int?
+  reportedDate       DateTime? @db.Date
+  summary            String    @db.Text
+  sourceUrl          String?
+  sourceQuality      Float?
+  createdAt          DateTime  @default(now())
+
+  incident     RawRecord    @relation(fields: [incidentId], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([incidentId])
+  @@index([organizationId])
+  @@map("incident_claims")
+}
+
+/// Leaks, testimony, and researcher contributions attached to an incident.
+model IncidentEvidence {
+  id          String       @id @default(uuid()) @db.Uuid
+  incidentId  String       @db.Uuid
+  type        EvidenceType
+  title       String
+  description String       @db.Text
+  fileUrl     String?
+  submittedBy String?
+  isVerified  Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+
+  incident RawRecord @relation(fields: [incidentId], references: [id], onDelete: Restrict)
+
+  @@index([incidentId, isVerified])
+  @@map("incident_evidence")
 }
 
 /// Golden record. knownNames keeps every linked spelling. resolved* columns
@@ -188,4 +246,23 @@ model ProfileLinkage {
   @@index([masterProfileId, conflictFlag])
   @@index([reviewStatus])
   @@map("profile_linkages")
+}
+
+/// Family report of a missing person. Reporter name, contact, and relationship are ciphertext.
+model MissingPersonReport {
+  id                String                    @id @default(uuid()) @db.Uuid
+  reporterName      String                    @db.Text
+  reporterContact   String                    @db.Text
+  relationship      String?                   @db.Text
+  missingPersonName String
+  approximateAge    Int?
+  dateOfLoss        DateTime?                 @db.Date
+  lastKnownLocation String?
+  smugglerDetails   String?                   @db.Text
+  physicalMarks     String?                   @db.Text
+  status            MissingPersonReportStatus @default(PENDING_REVIEW)
+  createdAt         DateTime                  @default(now())
+
+  @@index([status, createdAt])
+  @@map("missing_person_reports")
 }

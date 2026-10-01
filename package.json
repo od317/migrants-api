@@ -10,7 +10,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node --project tsconfig.seed.json --transpile-only prisma/seed.ts",
     "ingest:iom": "ts-node --project tsconfig.seed.json --transpile-only src/ingestion/ingest-iom.command.ts",
-    "ingest:hdx": "ts-node --project tsconfig.seed.json --transpile-only src/ingestion/ingest-hdx.command.ts"
+    "ingest:hdx": "ts-node --project tsconfig.seed.json --transpile-only src/ingestion/ingest-hdx.command.ts",
+    "seed:historical": "npx ts-node scripts/seed-historical-incidents.ts"
   },
   "prisma": {
     "seed": "npm run prisma:seed"

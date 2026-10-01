@@ -1,9 +1,50 @@
-import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { mkdirSync } from 'node:fs';
+import { readdir, rename, rm } from 'node:fs/promises';
+import { extname, join, resolve } from 'node:path';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, VitalStatus } from '@prisma/client';
+import { diskStorage } from 'multer';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CreateIncidentEvidenceDto } from './dto/create-incident-evidence.dto';
 import { ListIncidentsQueryDto } from './dto/list-incidents.query';
 
 const DEFAULT_LIMIT = 50;
+export const EVIDENCE_MAX_BYTES = 15 * 1024 * 1024;
+export const EVIDENCE_DIR = join(process.cwd(), 'uploads', 'evidence');
+const EVIDENCE_EXTENSIONS = new Set([
+  '.pdf',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.webp',
+  '.csv',
+  '.xlsx',
+  '.txt',
+  '.doc',
+  '.docx',
+]);
+
+const organizationSelect = {
+  id: true,
+  name: true,
+  acronym: true,
+  reliabilityScore: true,
+  url: true,
+} as const;
+
+export function evidenceUploadOptions() {
+  mkdirSync(EVIDENCE_DIR, { recursive: true });
+  return {
+    storage: diskStorage({
+      destination: EVIDENCE_DIR,
+      filename: (_req, file, callback) => {
+        callback(null, `${randomUUID()}${extname(file.originalname).toLowerCase()}`);
+      },
+    }),
+    limits: { fileSize: EVIDENCE_MAX_BYTES },
+  };
+}
 
 export type IncidentItem = {
   id: string;
@@ -95,6 +136,171 @@ export class IncidentsService {
         };
       }),
     };
+  }
+
+  async findOne(id: string) {
+    const record = await this.prisma.rawRecord.findUnique({
+      where: { id },
+      include: {
+        organization: {
+          select: { id: true, name: true, acronym: true, reliabilityScore: true, url: true },
+        },
+        claims: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            organization: {
+              select: { id: true, name: true, acronym: true, reliabilityScore: true, url: true },
+            },
+          },
+        },
+        evidence: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+    if (!record) {
+      throw new NotFoundException('Incident not found');
+    }
+
+    const metadata = readMetadata(record.payload);
+    const sourceRow = readSourceRow(record.payload);
+    const coordinates = readCoordinatesText(record.payload);
+    const fileClaim = claimFromRecord(record);
+    const peers = await this.peerRecords(record.id, record.eventDate, coordinates);
+    const claims = dedupeClaims([
+      fileClaim,
+      ...peers.map((peer) => claimFromRecord(peer)),
+      ...record.claims.map((claim) => ({
+        id: claim.id,
+        fromSourceFile: false,
+        organization: claim.organization,
+        reportedDead: claim.reportedDead,
+        reportedMissing: claim.reportedMissing,
+        reportedSurvivors: claim.reportedSurvivors,
+        reportedDate: claim.reportedDate ? claim.reportedDate.toISOString().slice(0, 10) : null,
+        summary: claim.summary,
+        sourceUrl: claim.sourceUrl,
+        sourceQuality: claim.sourceQuality,
+        createdAt: claim.createdAt,
+      })),
+    ]);
+
+    return {
+      id: record.id,
+      sourceRecordId: record.sourceLocator,
+      date: fileClaim.reportedDate,
+      year: record.eventDate ? record.eventDate.getUTCFullYear() : null,
+      location: record.location,
+      region: readText(sourceRow, ['region of incident', 'admin1', 'region']),
+      latitude: record.latitude,
+      longitude: record.longitude,
+      coordinates,
+      status: record.vitalStatus,
+      route: metadata.route ?? readText(sourceRow, ['migration route', 'event_type', 'event type']),
+      causeOfDeath: metadata.causeOfDeath,
+      totalCasualties: metadata.totalCasualties ?? readCount(sourceRow, ['fatalities']),
+      sourceUrl: metadata.sourceUrl,
+      sourceOrg: record.organization,
+      demographics: {
+        men: readCount(sourceRow, ['number of males']),
+        women: readCount(sourceRow, ['number of females']),
+        children: readCount(sourceRow, ['number of children']),
+      },
+      claims,
+      evidence: record.evidence,
+      contradictions: contradict(claims),
+    };
+  }
+
+  async addEvidence(
+    incidentId: string,
+    dto: CreateIncidentEvidenceDto,
+    file?: Express.Multer.File,
+  ) {
+    const incident = await this.prisma.rawRecord.findUnique({
+      where: { id: incidentId },
+      select: { id: true },
+    });
+    if (!incident) {
+      if (file) await rm(file.path, { force: true });
+      throw new NotFoundException('Incident not found');
+    }
+
+    const extension = file ? extname(file.originalname).toLowerCase() : '';
+    if (file && !EVIDENCE_EXTENSIONS.has(extension)) {
+      await rm(file.path, { force: true });
+      throw new BadRequestException('Attachment must be PDF, image, CSV, XLSX, or a text document');
+    }
+
+    const created = await this.prisma.incidentEvidence.create({
+      data: {
+        incidentId,
+        type: dto.type,
+        title: dto.title,
+        description: dto.description,
+        fileUrl: file ? null : (dto.fileUrl ?? null),
+        submittedBy: dto.submittedBy ?? null,
+        isVerified: false,
+      },
+    });
+
+    if (!file) {
+      return created;
+    }
+
+    const storedName = `${created.id}${extension}`;
+    try {
+      await rename(file.path, join(EVIDENCE_DIR, storedName));
+    } catch (error) {
+      await rm(file.path, { force: true });
+      await this.prisma.incidentEvidence.delete({ where: { id: created.id } });
+      throw error;
+    }
+
+    return this.prisma.incidentEvidence.update({
+      where: { id: created.id },
+      data: { fileUrl: `/api/incidents/${incidentId}/evidence/${created.id}/file` },
+    });
+  }
+
+  async evidenceFile(incidentId: string, evidenceId: string) {
+    const evidence = await this.prisma.incidentEvidence.findFirst({
+      where: { id: evidenceId, incidentId },
+    });
+    const downloadPath = `/api/incidents/${incidentId}/evidence/${evidenceId}/file`;
+    if (!evidence || evidence.fileUrl !== downloadPath) {
+      throw new NotFoundException('Attachment not found');
+    }
+    const names = await readdir(EVIDENCE_DIR);
+    const stored = names.find((name) => name.startsWith(`${evidenceId}.`) || name === evidenceId);
+    if (!stored) {
+      throw new NotFoundException('Attachment not found');
+    }
+    const absolute = resolve(EVIDENCE_DIR, stored);
+    if (!absolute.startsWith(resolve(EVIDENCE_DIR))) {
+      throw new NotFoundException('Attachment not found');
+    }
+    return { absolute, filename: stored };
+  }
+
+  private async peerRecords(
+    id: string,
+    eventDate: Date | null,
+    coordinates: string | null,
+  ) {
+    if (!eventDate || !coordinates) {
+      return [];
+    }
+    return this.prisma.rawRecord.findMany({
+      where: {
+        id: { not: id },
+        eventDate,
+        payload: { path: ['coordinates'], equals: coordinates },
+      },
+      include: { organization: { select: organizationSelect } },
+      orderBy: { sourceLocator: 'asc' },
+      take: 12,
+    });
   }
 
   async stats(): Promise<IncidentStats> {
@@ -213,6 +419,144 @@ function readMetadata(payload: Prisma.JsonValue): IncidentMetadata {
 function readCoordinatesText(payload: Prisma.JsonValue): string | null {
   const root = asObject(payload);
   return typeof root?.coordinates === 'string' ? root.coordinates : null;
+}
+
+type ClaimNumbers = {
+  organization: { id: string; name: string };
+  reportedDead: number | null;
+  reportedMissing: number | null;
+  reportedSurvivors: number | null;
+  reportedDate: string | null;
+};
+
+function contradict(claims: ClaimNumbers[]) {
+  const fields = ['reportedDead', 'reportedMissing', 'reportedSurvivors', 'reportedDate'] as const;
+  const disagreements = fields.flatMap((field) => {
+    const present = claims.filter((claim) => claim[field] != null);
+    const distinct = new Set(present.map((claim) => String(claim[field])));
+    if (distinct.size < 2) {
+      return [];
+    }
+    return [
+      {
+        field,
+        values: present.map((claim) => ({
+          organizationId: claim.organization.id,
+          organizationName: claim.organization.name,
+          value: claim[field],
+        })),
+      },
+    ];
+  });
+  return { detected: disagreements.length > 0, disagreements };
+}
+
+function fileSummary(metadata: IncidentMetadata, location: string | null): string {
+  const parts = [metadata.causeOfDeath, location].filter((part): part is string => Boolean(part));
+  return parts.join(' — ') || 'Reported in the source file';
+}
+
+type SourceClaimRecord = {
+  id: string;
+  payload: Prisma.JsonValue;
+  location: string | null;
+  eventDate: Date | null;
+  ingestedAt: Date;
+  organization: {
+    id: string;
+    name: string;
+    acronym: string | null;
+    reliabilityScore: number;
+    url: string | null;
+  };
+};
+
+function claimFromRecord(record: SourceClaimRecord) {
+  const metadata = readMetadata(record.payload);
+  const sourceRow = readSourceRow(record.payload);
+  const notes = readText(sourceRow, ['notes']);
+  const summary = [fileSummary(metadata, record.location), notes && notes !== metadata.causeOfDeath ? notes : null]
+    .filter((part): part is string => Boolean(part))
+    .join('\n');
+  return {
+    id: record.id,
+    fromSourceFile: true,
+    organization: record.organization,
+    reportedDead: readCount(sourceRow, ['number of dead', 'total dead', 'fatalities']),
+    reportedMissing: readCount(sourceRow, [
+      'minimum estimated number of missing',
+      'number of missing',
+      'total missing',
+    ]),
+    reportedSurvivors: readCount(sourceRow, ['number of survivors', 'total survivors']),
+    reportedDate: record.eventDate ? record.eventDate.toISOString().slice(0, 10) : metadata.date,
+    summary: summary || 'Reported in the source file',
+    sourceUrl: metadata.sourceUrl ?? readText(sourceRow, ['url', 'source_url']),
+    sourceQuality: record.organization.reliabilityScore,
+    createdAt: record.ingestedAt,
+  };
+}
+
+function dedupeClaims<T extends ClaimNumbers & { summary: string; sourceUrl: string | null }>(claims: T[]): T[] {
+  const seen = new Set<string>();
+  const unique: T[] = [];
+  for (const claim of claims) {
+    const key = [
+      claim.organization.id,
+      claim.reportedDead,
+      claim.reportedMissing,
+      claim.reportedSurvivors,
+      claim.reportedDate,
+      claim.summary,
+      claim.sourceUrl,
+    ].join('|');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(claim);
+  }
+  return unique;
+}
+
+function readText(row: Record<string, unknown> | null, names: string[]): string | null {
+  if (!row) return null;
+  const indexed = new Map<string, unknown>();
+  for (const [key, value] of Object.entries(row)) {
+    indexed.set(key.trim().toLowerCase(), value);
+  }
+  for (const name of names) {
+    const value = indexed.get(name);
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  }
+  return null;
+}
+
+function readSourceRow(payload: Prisma.JsonValue): Record<string, unknown> | null {
+  const root = asObject(payload);
+  return asObject(root?.sourceRow);
+}
+
+function readCount(row: Record<string, unknown> | null, names: string[]): number | null {
+  if (!row) {
+    return null;
+  }
+  const indexed = new Map<string, unknown>();
+  for (const [key, value] of Object.entries(row)) {
+    indexed.set(key.trim().toLowerCase(), value);
+  }
+  for (const name of names) {
+    const value = indexed.get(name);
+    const parsed =
+      typeof value === 'number'
+        ? value
+        : typeof value === 'string' && value.trim()
+          ? Number(value.replace(/,/g, '').trim())
+          : Number.NaN;
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return Math.trunc(parsed);
+    }
+  }
+  return null;
 }
 
 function asObject(value: unknown): Record<string, unknown> | null {
