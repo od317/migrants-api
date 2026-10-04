@@ -8,10 +8,10 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      PORT: 3000
-      DATABASE_URL: postgresql://migrants:${POSTGRES_PASSWORD}@postgres:5432/migrants?schema=public
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      PORT: "3000"
+      REDIS_HOST: migrants-redis
+      REDIS_PORT: "6379"
+      # DATABASE_URL is built in docker/entrypoint.sh from POSTGRES_PASSWORD.
     ports:
       - "127.0.0.1:3002:3000"
     volumes:
@@ -30,10 +30,11 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: migrants-postgres
+    hostname: migrants-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: migrants
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: migrants
     volumes:
       - migrants-postgres:/var/lib/postgresql/data
@@ -43,12 +44,15 @@ services:
       timeout: 5s
       retries: 20
     networks:
-      - migrants
+      migrants:
+        aliases:
+          - migrants-postgres
     mem_limit: 1g
 
   redis:
     image: redis:7-alpine
     container_name: migrants-redis
+    hostname: migrants-redis
     restart: unless-stopped
     command: ["redis-server", "--save", "60", "1"]
     volumes:
@@ -59,7 +63,9 @@ services:
       timeout: 3s
       retries: 20
     networks:
-      - migrants
+      migrants:
+        aliases:
+          - migrants-redis
     mem_limit: 256m
 
 networks:
@@ -67,7 +73,7 @@ networks:
     name: migrants
   proxy:
     external: true
-    name: ${NGINX_DOCKER_NETWORK}
+    name: ${NGINX_DOCKER_NETWORK:?Set NGINX_DOCKER_NETWORK in .env}
 
 volumes:
   migrants-postgres:
