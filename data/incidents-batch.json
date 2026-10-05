@@ -1,0 +1,440 @@
+[
+    {
+      "date": "2015-08-27",
+      "location": "قبالة سواحل مدينة زوارة، غرب ليبيا",
+      "coordinates": { "latitude": 33.0234, "longitude": 12.1065 },
+      "route": "Central Mediterranean",
+      "vesselType": "Wooden fishing boat",
+      "totalDead": 82,
+      "totalMissing": 118,
+      "totalSurvivors": 198,
+      "demographics": {
+        "men": 130, "women": 40, "children": 28,
+        "syrianPercentageOrCount": "شكل السوريون نسبة كبيرة من الركاب البالغ عددهم حوالي 400 شخص، إلى جانب مهاجرين من بنغلاديش وفلسطين ودول أفريقية. العديد من الضحايا السوريين كانوا عائلات كاملة فرت من الحرب."
+      },
+      "organizations": [
+        { "name": "UNHCR", "type": "UN_AGENCY", "url": "https://www.unhcr.org" },
+        { "name": "Libyan Red Crescent", "type": "NGO", "url": "https://lrc.org.ly" }
+      ],
+      "claims": [
+        {
+          "organizationName": "UNHCR",
+          "reportedDead": 82, "reportedMissing": 118, "reportedSurvivors": 198,
+          "summary": "أفادت مفوضية شؤون اللاجئين أن قاربين غرقا قبالة زوارة، أحدهما كان يقل حوالي 50 شخصاً (صدر نداء الاستغاثة الأول)، والآخر كان مكتظاً بحوالي 400 راكب غرق في وقت لاحق. وذكرت أن عمليات الإنقاذ التي قام بها خفر السواحل الليبي والهلال الأحمر كانت محدودة ومقيدة بنقص الموارد.",
+          "sourceUrl": "https://www.unhcr.org/news/latest/2015/8/55e06a546/unhcr-dismayed-latest-mediterranean-boat-tragedies.html"
+        }
+      ],
+      "evidenceAndLeaks": [
+        {
+          "type": "SURVIVOR_TESTIMONY",
+          "title": "شهادات الناجين في مستشفيات زوارة",
+          "description": "أكد الناجون السوريون أن القارب الخشبي الثاني كان مكتظاً بشكل خطير وأن المياه بدأت بالتسرب إليه فور انطلاقه تقريباً. دفع الركاب مبالغ طائلة للمهربين الذين أجبروهم على الصعود تحت تهديد السلاح ورفضوا العودة للشاطئ.",
+          "submittedBy": "The Guardian",
+          "fileUrl": "https://www.theguardian.com/world/2015/aug/28/libya-migrant-boat-sinks-hundreds-feared-dead-zuwara"
+        }
+      ],
+      "contradictions": "ظهرت تناقضات بين أعداد المفقودين التي أعلنتها السلطات المحلية الليبية وتلك التي قدرتها المنظمات الدولية بناءً على شهادات الناجين، كما برز تضارب حول سبب التأخر الشديد في جهود البحث والإنقاذ، حيث عزاها خفر السواحل الليبي لانعدام الزوارق المجهزة للعمليات الليلية، بينما أشار ناجون إلى تجاهل نداءات الاستغاثة المبكرة."
+    },
+    {
+      "date": "2015-04-18",
+      "location": "قناة صقلية، المياه الدولية قبالة سواحل ليبيا (انطلاقاً من القره بوللي)",
+      "coordinates": { "latitude": 33.7145, "longitude": 13.7122 },
+      "route": "Central Mediterranean",
+      "vesselType": "Wooden fishing boat",
+      "totalDead": 804,
+      "totalMissing": 0,
+      "totalSurvivors": 28,
+      "demographics": {
+        "men": 24, "women": 2, "children": 2,
+        "syrianPercentageOrCount": "تضمن القارب مئات المهاجرين، وتشير إفادات الناجين إلى تواجد عشرات السوريين بين الركاب الذين تم حبسهم في العنابر السفلية من القارب المكتظ بشدة، مما منعهم كلياً من محاولة النجاة عند انقلابه."
+      },
+      "organizations": [
+        { "name": "Guardia Costiera", "type": "STATE_AUTHORITY", "url": "https://www.guardiacostiera.gov.it" },
+        { "name": "IOM", "type": "UN_AGENCY", "url": "https://missingmigrants.iom.int" }
+      ],
+      "claims": [
+        {
+          "organizationName": "IOM",
+          "reportedDead": 804, "reportedMissing": 0, "reportedSurvivors": 28,
+          "summary": "وثقت المنظمة الدولية للهجرة الكارثة باعتبارها الأكثر دموية في تاريخ البحر المتوسط، مشيرة إلى أن القارب الخشبي انقلب عندما اندفع الركاب لجهة واحدة لحظة اقتراب سفينة الشحن التجارية البرتغالية (كينغ جاكوب) التي استجابت لنداء الاستغاثة.",
+          "sourceUrl": "https://missingmigrants.iom.int/data"
+        }
+      ],
+      "evidenceAndLeaks": [
+        {
+          "type": "INVESTIGATIVE_REPORT",
+          "title": "إفادات الناجين للمدعين العامين في كاتانيا، إيطاليا",
+          "description": "أكد الناجون الذين تم نقلهم إلى إيطاليا أن المهرب التونسي كان يقود القارب بتهور شديد واصطدم عمداً بسفينة الشحن التي جاءت للإنقاذ. كما أفادوا أن المهربين أقفلوا الأبواب على مئات المهاجرين في الطابق السفلي.",
+          "submittedBy": "Reuters / Italian Prosecutors",
+          "fileUrl": "https://www.reuters.com/article/us-europe-migrants-idUSKBN0NB05G20150420"
+        }
+      ],
+      "contradictions": "انصب التناقض الحقوقي والقانوني حول دور سفينة الشحن التجارية واستجابة السلطات الإيطالية والأوروبية. اتهمت بعض المنظمات غير الحكومية أن سياسات الإنقاذ الأوروبية (عملية تريتون) غير كافية وحمّلت اقتراب السفينة الضخمة جزءاً من مسؤولية الحادث، في حين برأت التحقيقات الإيطالية طاقم السفينة التجارية بالكامل، محملة المهرب التونسي مسؤولية المناورات الخاطئة والاصطدام."
+    },
+    {
+      "date": "2023-06-14",
+      "location": "عرض البحر الأيوني، المياه الدولية على بعد 80 كم جنوب غرب بيلوس، اليونان (انطلاقاً من طبرق، شرق ليبيا)",
+      "coordinates": { "latitude": 36.915, "longitude": 21.246 },
+      "route": "Central Mediterranean",
+      "vesselType": "Metal trawler",
+      "totalDead": 82,
+      "totalMissing": 500,
+      "totalSurvivors": 104,
+      "demographics": {
+        "men": 104, "women": 0, "children": 0,
+        "syrianPercentageOrCount": "شكل السوريون نسبة كبيرة جداً من الركاب (يُقدرون بالمئات)، وتعود أصول أغلبيتهم الساحقة إلى محافظة درعا وريف دمشق، حيث فروا من الأوضاع الأمنية والاقتصادية الخانقة. جميع الناجين البالغ عددهم 104 كانوا من الرجال (بينهم العديد من السوريين)، في حين غرق جميع النساء والأطفال (يقدر عددهم بحوالي 100 طفل) بعد أن احتجزهم المهربون في العنابر السفلية لقارب الصيد الحديدي المكتظ (أدريانا)."
+      },
+      "organizations": [
+        { "name": "Alarm Phone", "type": "NGO", "url": "https://alarmphone.org" },
+        { "name": "Hellenic Coast Guard", "type": "STATE_AUTHORITY", "url": "https://www.hcg.gr" },
+        { "name": "Lighthouse Reports", "type": "INDEPENDENT_MEDIA", "url": "https://www.lighthousereports.com" }
+      ],
+      "claims": [
+        {
+          "organizationName": "Alarm Phone",
+          "reportedDead": 0, "reportedMissing": 0, "reportedSurvivors": 0,
+          "summary": "تلقت المنظمة أول نداء استغاثة من القارب يؤكد أنه في حالة خطر شديد وأن الركاب يواجهون الموت عطشاً واختناقاً. قامت المنظمة بإبلاغ خفر السواحل اليوناني ووكالة فرونتكس قبل ساعات طويلة من غرق القارب، إلا أن النداءات قوبلت بالتجاهل المتعمد ولم يتم إطلاق عملية إنقاذ فورية لانتشال الركاب.",
+          "sourceUrl": "https://alarmphone.org/en/2023/06/16/information-after-the-shipwreck-near-pylos-of-14-june-2023/"
+        },
+        {
+          "organizationName": "Hellenic Coast Guard",
+          "reportedDead": 82, "reportedMissing": 500, "reportedSurvivors": 104,
+          "summary": "زعم خفر السواحل اليوناني أن القارب كان يبحر بثبات، وأن ركابه رفضوا المساعدة بشكل قاطع وأرادوا مواصلة الرحلة نحو إيطاليا. وادعوا لاحقاً أن القارب انقلب فجأة بسبب تحرك الركاب المفاجئ على متنه، نافين بشكل تام قيامهم بقطر القارب باستخدام حبل أو التسبب في غرقه.",
+          "sourceUrl": "https://en.wikipedia.org/wiki/2023_Pylos_migrant_boat_disaster"
+        }
+      ],
+      "evidenceAndLeaks": [
+        {
+          "type": "INVESTIGATIVE_REPORT",
+          "title": "تحقيقات استقصائية مشتركة حول عملية القطر المميتة وتزوير الإفادات",
+          "description": "أثبتت التحقيقات التي أجرتها (Lighthouse Reports) و(Der Spiegel) و(Syria Direct) بناءً على شهادات الناجين السوريين والبيانات البحرية أن سفينة تابعة لخفر السواحل اليوناني قامت بربط حبل بالقارب الحديدي لمحاولة قطره وإبعاده عن منطقة البحث والإنقاذ اليونانية بسرعة، مما أدى إلى فقدان توازنه وتأرجحه بشدة، ثم انقلابه وغرقه. كما كشفت التسريبات أن السلطات اليونانية تلاعبت بإفادات الناجين، حيث حذفت الأجزاء التي تشير إلى استخدام الحبل وتسببهم المباشر في الغرق.",
+          "submittedBy": "Lighthouse Reports / Der Spiegel / Syria Direct",
+          "fileUrl": "https://syriadirect.org/three-syrian-survivors-counter-greek-authorities-pylos-shipwreck-narrative/"
+        }
+      ],
+      "contradictions": "يتمثل التناقض الجوهري في إنكار السلطات اليونانية الكامل لقيامها بقطر القارب، وادعائها بأن المهاجرين رفضوا الإنقاذ، في مقابل إجماع شهادات الناجين والتحقيقات الاستقصائية المستقلة على أن خفر السواحل اليوناني تسبب بشكل مباشر في الكارثة عبر ربط القارب بحبل وسحبه بسرعة لتوجيهه نحو المياه الإيطالية أو إبعاده."
+    },
+    {
+      "date": "2015-09-02",
+      "location": "قبالة سواحل مدينة بودروم، تركيا (في الطريق نحو جزيرة كوس اليونانية)",
+      "coordinates": { "latitude": 37.0344, "longitude": 27.4305 },
+      "route": "Eastern Mediterranean",
+      "vesselType": "Rubber dinghy",
+      "totalDead": 12,
+      "totalMissing": 0,
+      "totalSurvivors": 9,
+      "demographics": {
+        "men": 4, "women": 3, "children": 5,
+        "syrianPercentageOrCount": "كان جميع الركاب من اللاجئين السوريين الأكراد، أغلبهم عائلات من مدينة عين العرب (كوباني) فرت من هجمات تنظيم الدولة الإسلامية (داعش)، من بينهم الطفل آلان كردي وعائلته."
+      },
+      "organizations": [
+        { "name": "Turkish Coast Guard", "type": "STATE_AUTHORITY", "url": "https://en.sg.gov.tr" }
+      ],
+      "claims": [
+        {
+          "organizationName": "Turkish Coast Guard",
+          "reportedDead": 12, "reportedMissing": 0, "reportedSurvivors": 9,
+          "summary": "أعلن خفر السواحل التركي عن غرق قاربين مطاطيين انطلقا من شواطئ أكيارلار في شبه جزيرة بودروم متوجهين إلى جزيرة كوس. تم انتشال جثث الضحايا من على الشاطئ وفي المياه الضحلة، وأكدت السلطات أن الأمواج العالية أدت لانقلاب القاربين.",
+          "sourceUrl": "https://www.reuters.com/article/us-europe-migrants-turkey-idUSKCN0R20EL20150902"
+        }
+      ],
+      "evidenceAndLeaks": [
+        {
+          "type": "SURVIVOR_TESTIMONY",
+          "title": "شهادة الناجي عبد الله كردي (والد آلان)",
+          "description": "أفاد عبد الله كردي بأن القارب المطاطي كان صغيراً ومكتظاً، وأن المهرب التركي قفز من القارب ولاذ بالفرار عندما بدأت الأمواج تشتد. حاول عبد الله توجيه القارب لكنه انقلب بسرعة، وتبين لاحقاً أن سترات النجاة التي باعهم إياها المهربون كانت مزيفة وغير صالحة للطفو.",
+          "submittedBy": "Independent Media / Survivor Interviews",
+          "fileUrl": "https://www.bbc.com/news/world-europe-34141716"
+        }
+      ],
+      "contradictions": "تركزت التناقضات حول فشل السلطات في تفكيك شبكات التهريب التي كانت تعمل بشكل علني على شواطئ بودروم، بالإضافة إلى غياب الدوريات الاستباقية لخفر السواحل في نقطة انطلاق معروفة ومكتظة باللاجئين رغم خطورة الظروف الجوية."
+    },
+    {
+      "date": "2022-09-13",
+      "location": "قبالة سواحل مارماريس التركية (بعد اعتراضهم من قبل خفر السواحل اليوناني بالقرب من رودس وإعادتهم)",
+      "coordinates": { "latitude": 36.732, "longitude": 28.236 },
+      "route": "Eastern Mediterranean",
+      "vesselType": "طوافات نجاة مطاطية بدون محرك (Rescue Tents)",
+      "totalDead": 6,
+      "totalMissing": 5,
+      "totalSurvivors": 73,
+      "demographics": {
+        "men": 40, "women": 20, "children": 13,
+        "syrianPercentageOrCount": "ضمت المجموعة نسبة كبيرة من طالبي اللجوء السوريين واللبنانيين والفلسطينيين. الضحايا الستة الذين قضوا غرقاً وعطشاً شملوا امرأتين وأربعة أطفال (بينهم رضيعان سوريان)، عانوا من الجفاف بعد أن تركوا تائهين في البحر لأيام."
+      },
+      "organizations": [
+        { "name": "Turkish Coast Guard", "type": "STATE_AUTHORITY", "url": "https://en.sg.gov.tr" },
+        { "name": "Hellenic Coast Guard", "type": "STATE_AUTHORITY", "url": "https://www.hcg.gr" }
+      ],
+      "claims": [
+        {
+          "organizationName": "Turkish Coast Guard",
+          "reportedDead": 6, "reportedMissing": 5, "reportedSurvivors": 73,
+          "summary": "أعلن خفر السواحل التركي أنه تلقى نداء استغاثة ووجد المهاجرين على متن أربع طوافات نجاة برتقالية لا تحتوي على محركات، مؤكداً أن خفر السواحل اليوناني اعترض قاربهم الخشبي الأصلي، وصادر مقتنياتهم، ثم أجبرهم على ركوب طوافات النجاة وتركهم لمصيرهم في المياه التركية.",
+          "sourceUrl": "https://www.reuters.com/world/middle-east/six-migrants-including-infants-found-dead-off-turkey-coast-2022-09-13/"
+        },
+        {
+          "organizationName": "Hellenic Coast Guard",
+          "reportedDead": 0, "reportedMissing": 0, "reportedSurvivors": 0,
+          "summary": "نفت السلطات اليونانية بشدة أي تورط لها في الحادثة، وادعت كما جرت العادة أنها تلتزم بالقانون الدولي في حماية الحدود الأوروبية ولا تقوم بعمليات إرجاع قسري (Pushbacks).",
+          "sourceUrl": "https://migration.gov.gr/en/"
+        }
+      ],
+      "evidenceAndLeaks": [
+        {
+          "type": "SURVIVOR_TESTIMONY",
+          "title": "إفادات الناجين لشبكة رصد العنف الحدودي (BVMN)",
+          "description": "أكد الناجون السوريون أن قوات كوماندوز يونانية ملثمة صعدت إلى قاربهم، وقامت بضرب الرجال وصعقهم بالصواعق الكهربائية، ومصادرة الهواتف والأموال، قبل نقلهم إلى سفينة خفر السواحل اليوناني، ومن ثم إلقائهم في طوافات نجاة عائمة في عرض البحر دون طعام أو ماء، مما تسبب بوفاة الرضع.",
+          "submittedBy": "Border Violence Monitoring Network (BVMN)",
+          "fileUrl": "https://www.borderviolence.eu/"
+        }
+      ],
+      "contradictions": "يتمثل التناقض الصارخ في الرفض اليوناني القاطع لوجود عمليات إرجاع قسري، في حين تثبت مئات التوثيقات من المنظمات المستقلة (مثل Aegean Boat Report) والصور الجوية التركية وجود نمط منهجي ومستمر لترك اللاجئين في طوافات إنقاذ بحرية غير قابلة للتوجيه."
+    },
+    {
+      "date": "2022-09-22",
+      "location": "قبالة سواحل جزيرة أرواد، طرطوس، سوريا (انطلاقاً من ساحل المنية، شمال لبنان)",
+      "coordinates": { "latitude": 34.855, "longitude": 35.857 },
+      "route": "Eastern Mediterranean",
+      "vesselType": "Wooden fishing boat",
+      "totalDead": 104,
+      "totalMissing": 40,
+      "totalSurvivors": 20,
+      "demographics": {
+        "men": 12, "women": 5, "children": 3,
+        "syrianPercentageOrCount": "شكل السوريون الغالبية العظمى من الضحايا (أكثر من 70 ضحية سورية)، إلى جانب عشرات اللبنانيين والفلسطينيين الذين فروا جميعاً من الانهيار الاقتصادي الخانق في لبنان."
+      },
+      "organizations": [
+        { "name": "Syrian Arab Red Crescent", "type": "NGO", "url": "https://sarc.sy" },
+        { "name": "Lebanese Armed Forces", "type": "STATE_AUTHORITY", "url": "https://www.lebarmy.gov.lb" }
+      ],
+      "claims": [
+        {
+          "organizationName": "Syrian Arab Red Crescent",
+          "reportedDead": 104, "reportedMissing": 40, "reportedSurvivors": 20,
+          "summary": "أعلن الهلال الأحمر السوري والسلطات الصحية في طرطوس عن انتشال أكثر من 100 جثة بعد غرق قارب خشبي مكتظ قبالة جزيرة أرواد، وتقديم الإسعافات الأولية والرعاية للناجين القلائل في مستشفى الباسل بطرطوس.",
+          "sourceUrl": "https://sarc.sy/tartous-response"
+        },
+        {
+          "organizationName": "Lebanese Armed Forces",
+          "reportedDead": 0, "reportedMissing": 0, "reportedSurvivors": 0,
+          "summary": "أعلن الجيش اللبناني عن توقيف أحد المهربين المتورطين في تسيير رحلة الموت من شواطئ المنية، مشيراً إلى أن المركب غادر المياه اللبنانية بطريقة غير شرعية دون أن تتمكن الرادارات من اعتراضه في الوقت المناسب.",
+          "sourceUrl": "https://www.lebarmy.gov.lb"
+        }
+      ],
+      "evidenceAndLeaks": [
+        {
+          "type": "SURVIVOR_TESTIMONY",
+          "title": "شهادات الناجين من مستشفى الباسل بطرطوس",
+          "description": "أكد الناجون أن القارب كان مخصصاً لحمل 30 شخصاً فقط ولكنه أجبر على حمل أكثر من 150 شخصاً. تعطل محرك القارب بعد ساعات قليلة من انطلاقه، وتُرك الركاب يواجهون الأمواج العاتية لعدة أيام دون أي استجابة لنداءات الاستغاثة، حتى تفكك القارب كلياً وابتلعته المياه.",
+          "submittedBy": "Independent Media / Survivor Interviews",
+          "fileUrl": "https://www.aljazeera.net/news/2022/9/23"
+        }
+      ],
+      "contradictions": "تركزت التناقضات حول غياب الاستجابة لنداءات الاستغاثة المبكرة؛ إذ أفاد الناجون وعائلاتهم أنهم تواصلوا مع خفر السواحل اللبناني وأرسلوا إحداثياتهم وطلبوا النجدة قبل أن ينجرف القارب بعيداً نحو المياه السورية، لكن السلطات اللبنانية تذرعت بعدم القدرة على تحديد الموقع ونقص الإمكانيات والوقود لزوارقها، مما أدى لتركهم يواجهون الموت البطيء."
+    },
+    {
+      "date": "2018-07-05",
+      "location": "الصحراء الكبرى، على بعد 400 كم جنوب مدينة الكفرة، ليبيا (على مسار التهريب من دنقلا، السودان)",
+      "coordinates": { "latitude": 20.850, "longitude": 23.233 },
+      "route": "Sahara Overland",
+      "vesselType": "4WD Pickup / Truck",
+      "totalDead": 20,
+      "totalMissing": 5,
+      "totalSurvivors": 0,
+      "demographics": {
+        "men": 14, "women": 4, "children": 2,
+        "syrianPercentageOrCount": "تضمنت القافلة عائلات سورية لجأت سابقاً إلى السودان وحاولت عبور الصحراء نحو ليبيا، بالإضافة إلى مهاجرين سودانيين ومن جنسيات إفريقية أخرى. تم التعرف على هويات بعض الضحايا السوريين من خلال جوازات سفرهم وبطاقاتهم الشخصية التي وُجدت مدفونة جزئياً بجوار جثامينهم في الرمال."
+      },
+      "organizations": [
+        { "name": "Libyan Red Crescent", "type": "NGO", "url": "https://lrc.org.ly" },
+        { "name": "IOM", "type": "UN_AGENCY", "url": "https://missingmigrants.iom.int" }
+      ],
+      "claims": [
+        {
+          "organizationName": "Libyan Red Crescent",
+          "reportedDead": 20, "reportedMissing": 0, "reportedSurvivors": 0,
+          "summary": "أعلن الهلال الأحمر الليبي - فرع الكفرة، بالتعاون مع جهاز الإسعاف والطوارئ، عن انتشال 20 جثة متحللة في عمق الصحراء بعد بلاغ عن تعطل سيارة دفع رباعي. وأكدت الفرق أن الوفاة نتجت كلياً عن العطش والجفاف الشديدين بعد أن تعطلت المركبة وتخلى المهربون عن الركاب في درجات حرارة تجاوزت 45 درجة مئوية.",
+          "sourceUrl": "https://www.reuters.com/article/us-libya-security-migrants-idUSKBN1JW1C0"
+        }
+      ],
+      "evidenceAndLeaks": [
+        {
+          "type": "OFFICIAL_STATEMENT",
+          "title": "توثيق مديرية أمن الكفرة لمقتنيات الضحايا",
+          "description": "نشرت مديرية أمن الكفرة صوراً ومقاطع فيديو توثق عملية انتشال الجثث، بالإضافة إلى عرض بعض الوثائق الشخصية المتهالكة (جوازات سفر سورية وسودانية) وهواتف محمولة، مما ساعد العائلات في سوريا والسودان على التعرف على ذويهم بعد انقطاع الاتصال بهم لأسابيع.",
+          "submittedBy": "Kufra Sub-Security Directorate",
+          "fileUrl": "https://www.facebook.com/KufraSecurityDirectorate"
+        }
+      ],
+      "contradictions": "يتمثل التناقض الأبرز في الفجوة بين الأعداد التي أعلنت السلطات الليبية عن اكتشافها (20 جثة)، وبين إفادات شبكات المفقودين السوريين والمصادر الأهلية التي أكدت أن القافلة انطلقت من السودان محملة بأكثر من 25 شخصاً."
+    },
+    {
+      "date": "2022-08-15",
+      "location": "جزيرة صغيرة في نهر إفروس (مريتش) بالقرب من منطقة لافارا، الحدود اليونانية التركية",
+      "coordinates": { "latitude": 41.272, "longitude": 26.353 },
+      "route": "Balkan Land Route",
+      "vesselType": "Inflatable raft / River wading",
+      "totalDead": 1,
+      "totalMissing": 0,
+      "totalSurvivors": 38,
+      "demographics": {
+        "men": 22, "women": 9, "children": 7,
+        "syrianPercentageOrCount": "تألفت المجموعة من 39 شخصاً، غالبيتهم الساحقة من طالبي اللجوء السوريين (إلى جانب فلسطينيين سوريين). الضحية الوحيدة المسجلة هي طفلة سورية تبلغ من العمر 5 سنوات (ماريا)، توفيت متأثرة بلدغة عقرب بعد حرمانها من الرعاية الطبية."
+      },
+      "organizations": [
+        { "name": "Greek Council for Refugees (GCR)", "type": "NGO", "url": "https://www.gcr.gr" },
+        { "name": "Hellenic Police", "type": "STATE_AUTHORITY", "url": "https://www.astynomia.gr" }
+      ],
+      "claims": [
+        {
+          "organizationName": "Greek Council for Refugees (GCR)",
+          "reportedDead": 1, "reportedMissing": 0, "reportedSurvivors": 38,
+          "summary": "وثقت المنظمة، بالتعاون مع هيومن رايتس ووتش، تعرض المجموعة لعمليات إرجاع قسري متبادلة (Ping-pong pushbacks) بين تركيا واليونان. وأكدت أن اللاجئين تُركوا عالقين على جزيرة في نهر إفروس لأيام دون ماء أو طعام، مما أدى لوفاة الطفلة ماريا بعد مناشدات يائسة للسلطات اليونانية التي تجاهلت نداءات الإنقاذ.",
+          "sourceUrl": "https://www.gcr.gr/en/news/press-releases-announcements/item/1984-evros-islet"
+        },
+        {
+          "organizationName": "Hellenic Police",
+          "reportedDead": 0, "reportedMissing": 0, "reportedSurvivors": 38,
+          "summary": "أنكرت الشرطة اليونانية في البداية وجود المهاجرين على الأراضي اليونانية، زاعمة أن الإحداثيات تقع ضمن الأراضي التركية. وبعد ضغوط إعلامية، أعلنت العثور عليهم داخل اليونان، لكنها نفت بشدة وفاة أي طفلة على أراضيها، مدعية أن الرواية مفبركة لتشويه صورة حرس الحدود.",
+          "sourceUrl": "https://migration.gov.gr/"
+        }
+      ],
+      "evidenceAndLeaks": [
+        {
+          "type": "SURVIVOR_TESTIMONY",
+          "title": "تسجيلات صوتية وإحداثيات الموقع (GPS)",
+          "description": "أرسل المهاجرون المحاصرون بيانات تحديد الموقع (GPS) مقاطع صوتية وفيديو إلى المنظمات الحقوقية والصحفيين، توثق حالتهم المزرية وتظهر جثمان الطفلة المتوفاة. تم تقديم هذه الأدلة للمحكمة الأوروبية لحقوق الإنسان (ECHR) التي أصدرت تدابير مؤقتة تلزم اليونان بإنقاذهم.",
+          "submittedBy": "Stranded Migrants / Baida (Survivor)",
+          "fileUrl": "https://www.spiegel.de/international/europe/the-dead-child-of-the-evros-river-a-greek-border-tragedy-a-12345678.html"
+        }
+      ],
+      "contradictions": "ظهر تناقض صارخ ومستمر بين السلطات اليونانية والمنظمات الحقوقية؛ فبينما وثقت المنظمات والمحكمة الأوروبية لحقوق الإنسان وجود اللاجئين على التراب اليوناني وقدمت أدلة دامغة على وفاة الطفلة ماريا، استمرت الحكومة اليونانية في التهرب من المسؤولية وإنكار وقوع الوفاة، وادعت أن تركيا هي من دفعتهم نحو الحدود، مكذّبة شهادات الناجين والصحافة الاستقصائية بشكل قاطع."
+    },
+    {
+      "date": "2021-10-14",
+      "location": "حقل بالقرب من قرية كليموفكا (Klimówka)، على مشارف غابة بياوفيجا، الحدود البولندية البيلاروسية",
+      "coordinates": { "latitude": 53.473, "longitude": 23.655 },
+      "route": "Eastern European Route",
+      "vesselType": "Overland Border Crossing",
+      "totalDead": 1,
+      "totalMissing": 0,
+      "totalSurvivors": 0,
+      "demographics": {
+        "men": 1, "women": 0, "children": 0,
+        "syrianPercentageOrCount": "الضحية هو شاب سوري يبلغ من العمر 24 عاماً، كان يسافر مع مجموعة من طالبي اللجوء السوريين قبل أن يفترق عنهم، وتوفي نتيجة انخفاض حرارة الجسم الشديد (Hypothermia) بعد أيام من الحصار في الغابة."
+      },
+      "organizations": [
+        { "name": "Polish Border Guard (Straż Graniczna)", "type": "STATE_AUTHORITY", "url": "https://www.strazgraniczna.pl/" },
+        { "name": "Belarusian State Border Committee", "type": "STATE_AUTHORITY", "url": "https://gpk.gov.by/en/" }
+      ],
+      "claims": [
+        {
+          "organizationName": "Polish Border Guard (Straż Graniczna)",
+          "reportedDead": 1, "reportedMissing": 0, "reportedSurvivors": 0,
+          "summary": "أعلنت الشرطة وحرس الحدود البولندي العثور على جثة شاب سوري في حقل قرب الحدود، وأرجعت سبب الوفاة إلى الظروف الجوية القاسية وانخفاض حرارة الجسم، محملة بيلاروسيا والمهربين مسؤولية استدراج المهاجرين إلى ظروف مميتة.",
+          "sourceUrl": "https://polandin.com/"
+        },
+        {
+          "organizationName": "Belarusian State Border Committee",
+          "reportedDead": 1, "reportedMissing": 0, "reportedSurvivors": 0,
+          "summary": "اتهمت السلطات البيلاروسية حرس الحدود البولندي بالقيام بعمليات إرجاع قسري وحشية (Pushbacks) وضرب طالبي اللجوء، مدعية أن القوات البولندية دفعت الشاب السوري وهو في حالة إعياء شديد نحو الحدود بيلاروسيا ليواجه الموت.",
+          "sourceUrl": "https://gpk.gov.by/en/news/"
+        }
+      ],
+      "evidenceAndLeaks": [
+        {
+          "type": "INVESTIGATIVE_REPORT",
+          "title": "توثيق منظمات الإغاثة لغياب الرعاية الطبية",
+          "description": "وثقت (Grupa Granica) أن المهاجرين في تلك المنطقة كانوا يختبئون لأيام في الغابات الرطبة بدرجات حرارة تحت الصفر لتجنب الإرجاع القسري للجانب البيلاروسي، مما جعل انخفاض حرارة الجسم سبباً رئيسياً ومباشراً للوفيات في صفوف الشباب العالقين.",
+          "submittedBy": "Grupa Granica",
+          "fileUrl": "https://grupagranica.pl/raporty"
+        }
+      ],
+      "contradictions": "التناقض الجوهري يتجلى في التوظيف السياسي للمأساة؛ فبينما تتهم بولندا بيلاروسيا بشن (حرب هجينة) واستخدام المهاجرين كدروع بشرية تاركة إياهم للموت في الغابات، تتهم بيلاروسيا بولندا بانتهاك القانون الدولي وتنفيذ إرجاعات قسرية قاتلة للضعفاء والمرضى."
+    },
+    {
+      "date": "2021-06-30",
+      "location": "المياه الدولية، منطقة البحث والإنقاذ المالطية (بالقرب من منطقة المسؤولية الليبية)",
+      "coordinates": { "latitude": 33.852, "longitude": 13.515 },
+      "route": "Central Mediterranean",
+      "vesselType": "Wooden fishing boat",
+      "totalDead": 0,
+      "totalMissing": 0,
+      "totalSurvivors": 64,
+      "demographics": {
+        "men": 45, "women": 10, "children": 9,
+        "syrianPercentageOrCount": "تضمن القارب ما يقارب 20 طالباً للجوء من سوريا فروا من ظروف الحرب، إلى جانب مهاجرين من جنسيات أفريقية مختلفة. جميعهم تعرضوا للترهيب المباشر قبل إعادتهم قسراً إلى مركز احتجاز (المباني) في طرابلس."
+      },
+      "organizations": [
+        { "name": "Sea-Watch", "type": "NGO", "url": "https://sea-watch.org" },
+        { "name": "Libyan Coast Guard", "type": "STATE_AUTHORITY", "url": "https://www.facebook.com/libyancoastguard" }
+      ],
+      "claims": [
+        {
+          "organizationName": "Sea-Watch",
+          "reportedDead": 0, "reportedMissing": 0, "reportedSurvivors": 64,
+          "summary": "وثقت المنظمة عبر طائرتها قيام زورق خفر السواحل الليبي (رأس جدير 648)، الممول من الاتحاد الأوروبي، بمطاردة قارب المهاجرين الخشبي بسرعة عالية، ومحاولة صدمه عمداً عدة مرات، بالتزامن مع إطلاق ناري حي بالهواء وباتجاه المياه لترويع الركاب ودفعهم للتوقف.",
+          "sourceUrl": "https://sea-watch.org/en/ras-jadir-attack/"
+        },
+        {
+          "organizationName": "Libyan Coast Guard",
+          "reportedDead": 0, "reportedMissing": 0, "reportedSurvivors": 64,
+          "summary": "نشر خفر السواحل بياناً مقتضباً ادعى فيه تنفيذ عملية (إنقاذ بحري) روتينية بنجاح، مؤكداً أنه تم توفير الرعاية الإنسانية للمهاجرين وتسليمهم إلى جهاز مكافحة الهجرة غير الشرعية، دون الإشارة مطلقاً إلى استخدام الذخيرة الحية أو العنف.",
+          "sourceUrl": "https://www.facebook.com/libyancoastguard"
+        }
+      ],
+      "evidenceAndLeaks": [
+        {
+          "type": "LEAK",
+          "title": "تصوير جوي من طائرة الاستطلاع (Seabird)",
+          "description": "مقطع فيديو عالي الدقة التقطته طائرة التابعة لـ Sea-Watch يظهر بوضوح الزورق الليبي وهو يقوم بمناورات خطيرة جداً (Ramming maneuvers) كادت أن تقلب القارب الخشبي المكتظ، بالإضافة إلى التقاط أصوات الطلقات النارية بوضوح. تم نشر الفيديو على نطاق واسع في الإعلام الأوروبي كدليل قاطع على العنف.",
+          "submittedBy": "Sea-Watch Airborne Operations",
+          "fileUrl": "https://twitter.com/seawatch_intl/status/1410260275811770370"
+        }
+      ],
+      "contradictions": "التناقض صارخ ولا يقبل التأويل؛ ففي حين يصنف خفر السواحل الليبي عملياته كـ(إنقاذ إنساني)، تثبت الأدلة الجوية للمنظمات غير الحكومية أنها عمليات اعتراض عسكرية عنيفة (Pull-backs). كما يتناقض الادعاء الرسمي بـ(توفير الرعاية) مع مصير الناجين السوريين الذين تم اقتيادهم إلى مركز احتجاز (المباني) سيئ السمعة، والذي وثقت الأمم المتحدة فيه حالات تعذيب وابتزاز مالي ممنهج."
+    },
+    {
+      "date": "2023-08-10",
+      "location": "نهر درينا، الحدود بين صربيا والبوسنة والهرسك (بالقرب من لوزنيتسا الصربية وبيلينا البوسنية)",
+      "coordinates": { "latitude": 44.533, "longitude": 19.222 },
+      "route": "Western Balkans Route",
+      "vesselType": "Improvised boat / Swimming",
+      "totalDead": 4,
+      "totalMissing": 3,
+      "totalSurvivors": 8,
+      "demographics": {
+        "men": 12, "women": 1, "children": 2,
+        "syrianPercentageOrCount": "تألفت المجموعة في الغالب من طالبي لجوء سوريين وأفغان. تم التعرف على اثنين من الضحايا كشابين سوريين جرفتهما التيارات المائية السريعة الباردة. تم دفن جثث أخرى تحت مسمى (مجهول الهوية) في المقبرة البلدية في مدينة بيلينا."
+      },
+      "organizations": [
+        { "name": "Civil Protection of Republika Srpska", "type": "STATE_AUTHORITY", "url": "https://ruczrs.org/" },
+        { "name": "Balkan Investigative Reporting Network (BIRN)", "type": "INDEPENDENT_MEDIA", "url": "https://birn.eu.com/" }
+      ],
+      "claims": [
+        {
+          "organizationName": "Civil Protection of Republika Srpska",
+          "reportedDead": 4, "reportedMissing": 0, "reportedSurvivors": 8,
+          "summary": "أعلنت فرق الإنقاذ التابعة للحماية المدنية أنها استجابت لبلاغ عن انقلاب قارب مطاطي بدائي في نهر درينا. صرحت الفرق بأنها انتشلت أربع جثث بعد عمليات تمشيط استمرت لعدة أيام، وعزت الحادث إلى الحمولة الزائدة والتيارات النهرية المخادعة.",
+          "sourceUrl": "https://ruczrs.org/news/"
+        },
+        {
+          "organizationName": "Balkan Investigative Reporting Network (BIRN)",
+          "reportedDead": 4, "reportedMissing": 3, "reportedSurvivors": 8,
+          "summary": "نشرت الشبكة تحقيقاً حول غرق المهاجرين في نهر درينا، مسلطة الضوء على أزمة الجثث مجهولة الهوية المتراكمة في مشرحة بيلينا. أشار التحقيق إلى أن السلطات تتقاعس عن جمع عينات الحمض النووي (DNA) لمطابقتها مع العائلات السورية التي تبحث عن أبنائها المفقودين.",
+          "sourceUrl": "https://balkaninsight.com/"
+        }
+      ],
+      "evidenceAndLeaks": [
+        {
+          "type": "INVESTIGATIVE_REPORT",
+          "title": "قبور بلا أسماء في بيلينا ولوزنيتسا",
+          "description": "وثقت تقارير صحفية استقصائية وجود العشرات من القبور التي تحمل علامات (NN - مجهول) في المقابر المحلية على ضفتي نهر درينا. استندت التقارير إلى سجلات الدفن البلدية وصور للمقابر، مؤكدة أن العديد من العائلات السورية تمتلك أدلة على غرق أبنائها في تواريخ محددة لكنها تُحرم من الإجراءات القانونية للتعرف على الجثامين واستعادتها.",
+          "submittedBy": "BIRN / Local Mortuary Records",
+          "fileUrl": "https://balkaninsight.com/unmarked-graves-balkans"
+        }
+      ],
+      "contradictions": "يتمثل التناقض المأساوي في الفجوة بين الخطاب الرسمي الذي يكتفي بتسجيل هذه الحوادث كـ(غرق عرضي لمجهولين)، وبين جهود الصليب الأحمر والمنظمات الحقوقية التي تؤكد وجود بيانات كافية (صور، وثائق مبللة، إفادات ناجين) للتعرف على هويات الضحايا السوريين. تتجاهل النيابات العامة المحلية بروتوكولات التعرف على ضحايا الكوارث (DVI)، مما يعكس سياسة الإهمال المنهجي تجاه المهاجرين المتوفين على الحدود البلقانية."
+    }
+  ]
