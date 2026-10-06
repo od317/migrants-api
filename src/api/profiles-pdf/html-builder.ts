@@ -48,11 +48,12 @@ let compiled: HandlebarsTemplateDelegate | null = null;
 async function getTemplate(): Promise<HandlebarsTemplateDelegate> {
   if (compiled) return compiled;
 
-  // Register helpers once.
-  Handlebars.registerHelper("eq", (a: unknown, b: unknown) => a === b);
   Handlebars.registerHelper("statusClass", statusClass);
   Handlebars.registerHelper("formatDate", formatDate);
   Handlebars.registerHelper("formatConfidence", formatConfidence);
+  Handlebars.registerHelper("translateStatus", translateStatus);
+  Handlebars.registerHelper("translateEvidenceType", translateEvidenceType);
+  Handlebars.registerHelper("translateField", translateField);
 
   const source = await readFile(TEMPLATE_PATH, "utf8");
   compiled = Handlebars.compile(source, { noEscape: false });
@@ -72,12 +73,15 @@ export async function buildCaseHtml(profile: ProfileDetail): Promise<string> {
 
   const data: CaseTemplateData = {
     profile,
-    generatedAt:
-      new Date().toLocaleString("en-GB", {
-        dateStyle: "medium",
-        timeStyle: "short",
-        timeZone: "UTC",
-      }) + " UTC",
+    generatedAt: (() => {
+      const now = new Date();
+      const day = now.getUTCDate();
+      const month = ARABIC_MONTHS[now.getUTCMonth()];
+      const year = now.getUTCFullYear();
+      const hours = String(now.getUTCHours()).padStart(2, "0");
+      const minutes = String(now.getUTCMinutes()).padStart(2, "0");
+      return `${day} ${month} ${year} - ${hours}:${minutes} بتوقيت UTC`;
+    })(),
     statusClass: statusClass(profile.resolvedStatus),
     organizationCount: organizations.size,
   };
