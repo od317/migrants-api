@@ -5,6 +5,36 @@ import type { ProfileDetail } from "../profiles/profiles.service";
 
 const TEMPLATE_PATH = join(__dirname, "templates", "case.hbs");
 
+// ---- Arabic translation tables --------------------------------------------
+
+const ARABIC_MONTHS = [
+  "يناير",
+  "فبراير",
+  "مارس",
+  "أبريل",
+  "مايو",
+  "يونيو",
+  "يوليو",
+  "أغسطس",
+  "سبتمبر",
+  "أكتوبر",
+  "نوفمبر",
+  "ديسمبر",
+];
+
+const STATUS_LABELS_AR: Record<string, string> = {
+  ALIVE: "على قيد الحياة",
+  MISSING: "مفقود",
+  DECEASED: "متوفى",
+  DECEASED_OR_MISSING: "متوفى أو مفقود",
+  DETAINED: "معتقل",
+  UNKNOWN: "غير معروف",
+  FATALITY_EVENT: "حادثة وفيات",
+  CONFLICT_EVENT: "حادثة نزاع",
+};
+
+// ---- Handlebars helpers ----------------------------------------------------
+
 /** Map each VitalStatus to a CSS class for the badge in the template. */
 function statusClass(status: string): string {
   switch (status) {
@@ -23,17 +53,15 @@ function statusClass(status: string): string {
   }
 }
 
-/** 2024-08-15T00:00:00.000Z → 15 Aug 2024 */
+/** 2024-08-15T00:00:00.000Z → 15 أغسطس 2024 */
 function formatDate(value: unknown): string {
   if (!value) return "—";
   const date = value instanceof Date ? value : new Date(String(value));
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+  const day = date.getUTCDate();
+  const month = ARABIC_MONTHS[date.getUTCMonth()];
+  const year = date.getUTCFullYear();
+  return `${day} ${month} ${year}`;
 }
 
 /** 0.85 → 85% */
@@ -42,6 +70,13 @@ function formatConfidence(value: unknown): string {
   if (!Number.isFinite(n)) return "—";
   return `${Math.round(n * 100)}%`;
 }
+
+function translateStatus(value: unknown): string {
+  const key = String(value ?? "");
+  return STATUS_LABELS_AR[key] ?? key;
+}
+
+// ---- Compilation cache -----------------------------------------------------
 
 let compiled: HandlebarsTemplateDelegate | null = null;
 
@@ -52,8 +87,6 @@ async function getTemplate(): Promise<HandlebarsTemplateDelegate> {
   Handlebars.registerHelper("formatDate", formatDate);
   Handlebars.registerHelper("formatConfidence", formatConfidence);
   Handlebars.registerHelper("translateStatus", translateStatus);
-  Handlebars.registerHelper("translateEvidenceType", translateEvidenceType);
-  Handlebars.registerHelper("translateField", translateField);
 
   const source = await readFile(TEMPLATE_PATH, "utf8");
   compiled = Handlebars.compile(source, { noEscape: false });
@@ -71,17 +104,19 @@ export async function buildCaseHtml(profile: ProfileDetail): Promise<string> {
   const template = await getTemplate();
   const organizations = new Set(profile.linkages.map((l) => l.organization.id));
 
+  const now = new Date();
+  const generatedAt = (() => {
+    const day = now.getUTCDate();
+    const month = ARABIC_MONTHS[now.getUTCMonth()];
+    const year = now.getUTCFullYear();
+    const hours = String(now.getUTCHours()).padStart(2, "0");
+    const minutes = String(now.getUTCMinutes()).padStart(2, "0");
+    return `${day} ${month} ${year} - ${hours}:${minutes} بتوقيت UTC`;
+  })();
+
   const data: CaseTemplateData = {
     profile,
-    generatedAt: (() => {
-      const now = new Date();
-      const day = now.getUTCDate();
-      const month = ARABIC_MONTHS[now.getUTCMonth()];
-      const year = now.getUTCFullYear();
-      const hours = String(now.getUTCHours()).padStart(2, "0");
-      const minutes = String(now.getUTCMinutes()).padStart(2, "0");
-      return `${day} ${month} ${year} - ${hours}:${minutes} بتوقيت UTC`;
-    })(),
+    generatedAt,
     statusClass: statusClass(profile.resolvedStatus),
     organizationCount: organizations.size,
   };
