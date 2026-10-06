@@ -2,9 +2,10 @@ import { Module } from "@nestjs/common";
 import { ResolutionModule } from "../resolution/resolution.module";
 import { IncidentsController } from "./incidents/incidents.controller";
 import { IncidentsService } from "./incidents/incidents.service";
+import { IncidentsPdfService } from "./incidents-pdf/incidents-pdf.service"; // ← new
 import { ProfilesController } from "./profiles/profiles.controller";
 import { ProfilesService } from "./profiles/profiles.service";
-import { ProfilesPdfService } from "./profiles-pdf/profiles-pdf.service";
+import { ProfilesPdfService } from "./profiles-pdf/profiles-pdf.service"; // ← from earlier
 import { ReportsController } from "./reports/reports.controller";
 import { ReportsService } from "./reports/reports.service";
 import { AdminGuard } from "./guards/admin.guard";
@@ -24,13 +25,14 @@ import { SourcesService } from "./sources/sources.service";
   ],
   providers: [
     ProfilesService,
-    ProfilesPdfService, // ← new
-    SourcesService,
+    ProfilesPdfService, // from earlier
     IncidentsService,
+    IncidentsPdfService, // ← new
+    SourcesService,
     ReportsService,
     SubmissionsService,
     AdminGuard,
   ],
-  exports: [IncidentsService, ProfilesService], // ← export ProfilesService for future use
+  exports: [IncidentsService, ProfilesService],
 })
 export class ApiModule {}

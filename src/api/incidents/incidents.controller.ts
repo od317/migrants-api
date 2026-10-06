@@ -10,26 +10,36 @@ import {
   UploadedFile,
   UseFilters,
   UseInterceptors,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Response } from 'express';
-import { createReadStream } from 'node:fs';
-import { CreateIncidentEvidenceDto } from './dto/create-incident-evidence.dto';
-import { ListIncidentsQueryDto } from './dto/list-incidents.query';
-import { EvidenceUploadExceptionFilter } from './evidence-upload.filter';
-import { evidenceUploadOptions, IncidentsService } from './incidents.service';
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiProduces,
+  ApiTags,
+} from "@nestjs/swagger";
+import type { Response } from "express";
+import { createReadStream } from "node:fs";
+import { CreateIncidentEvidenceDto } from "./dto/create-incident-evidence.dto";
+import { ListIncidentsQueryDto } from "./dto/list-incidents.query";
+import { EvidenceUploadExceptionFilter } from "./evidence-upload.filter";
+import { evidenceUploadOptions, IncidentsService } from "./incidents.service";
+import { IncidentsPdfService } from "../incidents-pdf/incidents-pdf.service"; // ← new
 
-@ApiTags('incidents')
-@Controller('incidents')
+@ApiTags("incidents")
+@Controller("incidents")
 export class IncidentsController {
-  constructor(private readonly incidentsService: IncidentsService) {}
+  constructor(
+    private readonly incidentsService: IncidentsService,
+    private readonly incidentsPdf: IncidentsPdfService, // ← new
+  ) {}
 
-  @Get('stats')
+  @Get("stats")
   @ApiOperation({
-    summary: 'Aggregate Syrian incident statistics',
+    summary: "Aggregate Syrian incident statistics",
     description:
-      'Total casualties, a breakdown by migration route, and the five sources that reported the most incidents.',
+      "Total casualties, a breakdown by migration route, and the five sources that reported the most incidents.",
   })
   stats() {
     return this.incidentsService.stats();
@@ -37,48 +47,76 @@ export class IncidentsController {
 
   @Get()
   @ApiOperation({
-    summary: 'List ingested Syrian incidents',
+    summary: "List ingested Syrian incidents",
     description:
-      'Filter by migration route, year, or reporting organization. Results are paginated with limit and offset.',
+      "Filter by migration route, year, or reporting organization. Results are paginated with limit and offset.",
   })
   list(@Query() query: ListIncidentsQueryDto) {
     return this.incidentsService.list(query);
   }
 
-  @Get(':id/evidence/:evidenceId/file')
-  @ApiOperation({ summary: 'Download an evidence attachment' })
+  @Get(":id/evidence/:evidenceId/file")
+  @ApiOperation({ summary: "Download an evidence attachment" })
   async evidenceFile(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('evidenceId', ParseUUIDPipe) evidenceId: string,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Param("evidenceId", ParseUUIDPipe) evidenceId: string,
     @Res() response: Response,
   ) {
     const file = await this.incidentsService.evidenceFile(id, evidenceId);
-    response.setHeader('Content-Disposition', `inline; filename="${file.filename}"`);
+    response.setHeader(
+      "Content-Disposition",
+      `inline; filename="${file.filename}"`,
+    );
     createReadStream(file.absolute).pipe(response);
   }
 
-  @Get(':id')
+  // ---- NEW: PDF download route --------------------------------------------
+  @Get(":id/pdf")
   @ApiOperation({
-    summary: 'Get an incident dossier',
+    summary: "Download an incident dossier as PDF",
     description:
-      'Returns the incident, source claims that share its date and coordinates, attached evidence, and a contradiction block when those claims disagree.',
+      "Renders the incident, its source claims, contradictions, and evidence list as a printable PDF.",
   })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
+  @ApiProduces("application/pdf")
+  async downloadPdf(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Res() response: Response,
+  ): Promise<void> {
+    const { buffer, filename, asciiFallback } =
+      await this.incidentsPdf.render(id);
+
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    );
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader("Content-Length", buffer.length.toString());
+    response.setHeader("Cache-Control", "private, max-age=0, must-revalidate");
+    response.end(buffer);
+  }
+
+  @Get(":id")
+  @ApiOperation({
+    summary: "Get an incident dossier",
+    description:
+      "Returns the incident, source claims that share its date and coordinates, attached evidence, and a contradiction block when those claims disagree.",
+  })
+  findOne(@Param("id", ParseUUIDPipe) id: string) {
     return this.incidentsService.findOne(id);
   }
 
-  @Post(':id/evidence')
+  @Post(":id/evidence")
   @ApiOperation({
-    summary: 'Submit evidence for an incident',
+    summary: "Submit evidence for an incident",
     description:
-      'Stores a leak, testimony, link, or document. A file up to 15 MB may be attached. New submissions stay unverified until they are reviewed.',
+      "Stores a leak, testimony, link, or document. A file up to 15 MB may be attached. New submissions stay unverified until they are reviewed.",
   })
-  @ApiConsumes('multipart/form-data', 'application/json')
+  @ApiConsumes("multipart/form-data", "application/json")
   @ApiBody({ type: CreateIncidentEvidenceDto })
   @UseFilters(EvidenceUploadExceptionFilter)
-  @UseInterceptors(FileInterceptor('file', evidenceUploadOptions()))
+  @UseInterceptors(FileInterceptor("file", evidenceUploadOptions()))
   addEvidence(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: CreateIncidentEvidenceDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {

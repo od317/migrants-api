@@ -1,0 +1,422 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Incident {{incident.id}}</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 18mm 16mm 22mm 16mm;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        color: #1a1a1a;
+        font-size: 11pt;
+        line-height: 1.45;
+        margin: 0;
+      }
+
+      .arabic {
+        font-family: "Noto Naskh Arabic", "Amiri", "Scheherazade New", serif;
+        direction: rtl;
+        unicode-bidi: isolate;
+      }
+
+      h1 {
+        font-size: 20pt;
+        margin: 0 0 4px 0;
+      }
+      h2 {
+        font-size: 13pt;
+        margin: 22px 0 8px 0;
+        border-bottom: 1.5px solid #ccc;
+        padding-bottom: 4px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 2px solid #333;
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+      }
+      .header .meta {
+        text-align: right;
+        font-size: 9pt;
+        color: #666;
+      }
+      .header .meta div {
+        margin: 2px 0;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 9pt;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+      .badge.deceased {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .badge.missing {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .badge.alive {
+        background: #d4f4dd;
+        color: #155724;
+      }
+      .badge.detained {
+        background: #d1ecf1;
+        color: #0c5460;
+      }
+      .badge.conflict {
+        background: #fde2e4;
+        color: #842029;
+      }
+      .badge.fatality {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .badge.unknown {
+        background: #e2e3e5;
+        color: #383d41;
+      }
+
+      .alert {
+        border-left: 4px solid #c0392b;
+        background: #fdf2f2;
+        padding: 10px 14px;
+        margin: 14px 0;
+        page-break-inside: avoid;
+      }
+      .alert h2 {
+        margin-top: 0;
+        color: #c0392b;
+        border: none;
+        padding: 0;
+      }
+      .alert ul {
+        margin: 6px 0 0 0;
+        padding-left: 18px;
+      }
+      .alert li {
+        margin-bottom: 4px;
+      }
+      .alert .value {
+        font-weight: 600;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 6px 14px;
+        margin: 12px 0 4px 0;
+      }
+      .grid dt {
+        font-weight: 600;
+        color: #444;
+      }
+      .grid dd {
+        margin: 0;
+      }
+
+      .muted {
+        color: #888;
+      }
+      .small {
+        font-size: 9pt;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9.5pt;
+        margin-top: 6px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 5px 8px;
+        border-bottom: 1px solid #ddd;
+        vertical-align: top;
+      }
+      th {
+        background: #f4f4f4;
+        font-weight: 600;
+        font-size: 9pt;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      tr {
+        page-break-inside: avoid;
+      }
+
+      .claim-summary {
+        font-size: 9pt;
+        color: #555;
+        white-space: pre-wrap;
+        margin-top: 4px;
+      }
+
+      .evidence-item {
+        border-left: 3px solid #b8b8b8;
+        padding: 8px 0 8px 12px;
+        margin: 0 0 10px 4px;
+        page-break-inside: avoid;
+      }
+      .evidence-item .title {
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .evidence-item .meta {
+        font-size: 9pt;
+        color: #666;
+        margin-top: 2px;
+      }
+      .evidence-item .description {
+        font-size: 9.5pt;
+        color: #333;
+        margin-top: 4px;
+        white-space: pre-wrap;
+      }
+      .verified {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 8px;
+        font-size: 8pt;
+        background: #d4f4dd;
+        color: #155724;
+        margin-left: 6px;
+      }
+
+      .footer {
+        margin-top: 40px;
+        padding-top: 10px;
+        border-top: 1px solid #ccc;
+        font-size: 8.5pt;
+        color: #888;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="header">
+      <div>
+        <h1>Incident Report</h1>
+        <div class="muted small">
+          Source record:
+          {{#if
+            incident.sourceRecordId
+          }}{{incident.sourceRecordId}}{{else}}{{incident.id}}{{/if}}
+        </div>
+      </div>
+      <div class="meta">
+        <div>Generated {{generatedAt}}</div>
+        <div>Status:
+          <span class="badge {{statusClass}}">{{incident.status}}</span></div>
+        {{#if incident.year}}<div>Year: {{incident.year}}</div>{{/if}}
+      </div>
+    </div>
+
+    {{#if incident.contradictions.detected}}
+      <div class="alert">
+        <h2>⚠ Conflicting reports</h2>
+        <p>Sources disagree on the following fields:</p>
+        <ul>
+          {{#each incident.contradictions.disagreements}}
+            <li>
+              <strong>{{humanize field}}:</strong>
+              {{#each values}}
+                <span class="value">{{value}}</span>
+                <span class="muted">({{organizationName}})</span>{{#unless
+                  @last
+                }} · {{/unless}}
+              {{/each}}
+            </li>
+          {{/each}}
+        </ul>
+      </div>
+    {{/if}}
+
+    <h2>Incident details</h2>
+    <dl class="grid">
+      <dt>Date</dt>
+      <dd>{{#if incident.date}}{{formatDate incident.date}}{{else}}<span
+            class="muted"
+          >Unknown</span>{{/if}}</dd>
+
+      <dt>Location</dt>
+      <dd>{{#if incident.location}}{{incident.location}}{{else}}<span
+            class="muted"
+          >Unknown</span>{{/if}}</dd>
+
+      {{#if incident.region}}
+        <dt>Region</dt>
+        <dd>{{incident.region}}</dd>
+      {{/if}}
+
+      <dt>Coordinates</dt>
+      <dd>
+        {{#if incident.coordinates}}
+          {{incident.coordinates}}
+          {{#if incident.latitude}}
+            <span class="muted small">({{incident.latitude}},
+              {{incident.longitude}})</span>
+          {{/if}}
+        {{else if incident.latitude}}
+          {{incident.latitude}},
+          {{incident.longitude}}
+        {{else}}
+          <span class="muted">Unknown</span>
+        {{/if}}
+      </dd>
+
+      {{#if incident.route}}
+        <dt>Migration route</dt>
+        <dd>{{incident.route}}</dd>
+      {{/if}}
+
+      {{#if incident.causeOfDeath}}
+        <dt>Cause</dt>
+        <dd>{{incident.causeOfDeath}}</dd>
+      {{/if}}
+
+      {{#if incident.totalCasualties}}
+        <dt>Total casualties</dt>
+        <dd><strong>{{incident.totalCasualties}}</strong></dd>
+      {{/if}}
+
+      {{#if incident.sourceOrg}}
+        <dt>Source organization</dt>
+        <dd>
+          {{incident.sourceOrg.name}}
+          {{#if incident.sourceOrg.acronym}}
+            ({{incident.sourceOrg.acronym}}){{/if}}
+          <span class="muted small">— reliability
+            {{formatConfidence incident.sourceOrg.reliabilityScore}}</span>
+        </dd>
+      {{/if}}
+
+      {{#if incident.sourceUrl}}
+        <dt>Source URL</dt>
+        <dd class="small">{{incident.sourceUrl}}</dd>
+      {{/if}}
+    </dl>
+
+    {{#if hasDemographics}}
+      <h2>Demographics</h2>
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Count</th></tr>
+        </thead>
+        <tbody>
+          {{#if incident.demographics.men}}<tr><td>Men</td><td
+              >{{incident.demographics.men}}</td></tr>{{/if}}
+          {{#if incident.demographics.women}}<tr><td>Women</td><td
+              >{{incident.demographics.women}}</td></tr>{{/if}}
+          {{#if incident.demographics.children}}<tr><td>Children</td><td
+              >{{incident.demographics.children}}</td></tr>{{/if}}
+        </tbody>
+      </table>
+    {{/if}}
+
+    <h2>Source claims ({{incident.claims.length}})</h2>
+    {{#if incident.claims.length}}
+      <table>
+        <thead>
+          <tr>
+            <th>Organization</th>
+            <th>Date</th>
+            <th>Dead</th>
+            <th>Missing</th>
+            <th>Survivors</th>
+            <th>Quality</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each incident.claims}}
+            <tr>
+              <td>
+                {{organization.name}}
+                {{#if organization.acronym}}<span
+                    class="muted small"
+                  >({{organization.acronym}})</span>{{/if}}
+                {{#unless fromSourceFile}}<span class="muted small">· manual</span>{{/unless}}
+              </td>
+              <td>{{#if reportedDate}}{{formatDate
+                    reportedDate
+                  }}{{else}}—{{/if}}</td>
+              <td>{{#if reportedDead}}{{reportedDead}}{{else}}—{{/if}}</td>
+              <td>{{#if
+                  reportedMissing
+                }}{{reportedMissing}}{{else}}—{{/if}}</td>
+              <td>{{#if
+                  reportedSurvivors
+                }}{{reportedSurvivors}}{{else}}—{{/if}}</td>
+              <td>{{#if sourceQuality}}{{formatConfidence
+                    sourceQuality
+                  }}{{else}}—{{/if}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      {{#each incident.claims}}
+        {{#if summary}}
+          <div class="claim-summary">
+            <strong>{{organization.name}}:</strong>
+            {{summary}}
+          </div>
+        {{/if}}
+      {{/each}}
+    {{else}}
+      <p class="muted">No source claims recorded for this incident.</p>
+    {{/if}}
+
+    <h2>Evidence ({{incident.evidence.length}})</h2>
+    {{#if incident.evidence.length}}
+      {{#each incident.evidence}}
+        <div class="evidence-item">
+          <div class="title">
+            <span>
+              {{title}}
+              {{#if isVerified}}<span class="verified">✓ verified</span>{{/if}}
+            </span>
+            <span class="muted small">{{type}}</span>
+          </div>
+          <div class="meta">
+            {{#if submittedBy}}Submitted by {{submittedBy}} · {{/if}}
+            {{formatDate createdAt}}
+            {{#if fileUrl}} · <span class="muted">attachment</span>{{/if}}
+          </div>
+          {{#if description}}
+            <div class="description">{{description}}</div>
+          {{/if}}
+        </div>
+      {{/each}}
+    {{else}}
+      <p class="muted">No evidence attached to this incident.</p>
+    {{/if}}
+
+    <div class="footer">
+      Generated from ingested source data. Not a legal record.
+      <br />
+      Incident ID:
+      {{incident.id}}
+    </div>
+
+  </body>
+</html>
