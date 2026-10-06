@@ -1,7 +1,7 @@
-<html lang="en">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <title>Incident {{incident.id}}</title>
+    <title>تقرير حادثة {{incident.id}}</title>
     <style>
       @page {
         size: A4;
@@ -14,17 +14,13 @@
 
       body {
         font-family:
-          -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          "Noto Naskh Arabic", "Amiri", "Segoe UI", Tahoma, sans-serif;
         color: #1a1a1a;
         font-size: 11pt;
-        line-height: 1.45;
+        line-height: 1.7;
         margin: 0;
-      }
-
-      .arabic {
-        font-family: "Noto Naskh Arabic", "Amiri", "Scheherazade New", serif;
         direction: rtl;
-        unicode-bidi: isolate;
+        text-align: right;
       }
 
       h1 {
@@ -40,6 +36,7 @@
 
       .header {
         display: flex;
+        flex-direction: row-reverse;
         justify-content: space-between;
         align-items: flex-end;
         border-bottom: 2px solid #333;
@@ -47,7 +44,7 @@
         margin-bottom: 16px;
       }
       .header .meta {
-        text-align: right;
+        text-align: left;
         font-size: 9pt;
         color: #666;
       }
@@ -61,7 +58,6 @@
         border-radius: 10px;
         font-size: 9pt;
         font-weight: 600;
-        letter-spacing: 0.3px;
       }
       .badge.deceased {
         background: #f8d7da;
@@ -93,7 +89,7 @@
       }
 
       .alert {
-        border-left: 4px solid #c0392b;
+        border-right: 4px solid #c0392b;
         background: #fdf2f2;
         padding: 10px 14px;
         margin: 14px 0;
@@ -107,7 +103,8 @@
       }
       .alert ul {
         margin: 6px 0 0 0;
-        padding-left: 18px;
+        padding-right: 18px;
+        padding-left: 0;
       }
       .alert li {
         margin-bottom: 4px;
@@ -145,7 +142,7 @@
       }
       th,
       td {
-        text-align: left;
+        text-align: right;
         padding: 5px 8px;
         border-bottom: 1px solid #ddd;
         vertical-align: top;
@@ -154,8 +151,6 @@
         background: #f4f4f4;
         font-weight: 600;
         font-size: 9pt;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
       }
       tr {
         page-break-inside: avoid;
@@ -169,14 +164,15 @@
       }
 
       .evidence-item {
-        border-left: 3px solid #b8b8b8;
-        padding: 8px 0 8px 12px;
-        margin: 0 0 10px 4px;
+        border-right: 3px solid #b8b8b8;
+        padding: 8px 12px 8px 0;
+        margin: 0 4px 10px 0;
         page-break-inside: avoid;
       }
       .evidence-item .title {
         font-weight: 600;
         display: flex;
+        flex-direction: row-reverse;
         justify-content: space-between;
         align-items: baseline;
       }
@@ -198,7 +194,7 @@
         font-size: 8pt;
         background: #d4f4dd;
         color: #155724;
-        margin-left: 6px;
+        margin-right: 6px;
       }
 
       .footer {
@@ -215,30 +211,32 @@
 
     <div class="header">
       <div>
-        <h1>Incident Report</h1>
+        <h1>تقرير حادثة</h1>
         <div class="muted small">
-          Source record:
+          رقم السجل المصدر:
           {{#if
             incident.sourceRecordId
           }}{{incident.sourceRecordId}}{{else}}{{incident.id}}{{/if}}
         </div>
       </div>
       <div class="meta">
-        <div>Generated {{generatedAt}}</div>
-        <div>Status:
-          <span class="badge {{statusClass}}">{{incident.status}}</span></div>
-        {{#if incident.year}}<div>Year: {{incident.year}}</div>{{/if}}
+        <div>تاريخ الإنشاء: {{generatedAt}}</div>
+        <div>الحالة:
+          <span class="badge {{statusClass}}">{{translateStatus
+              incident.status
+            }}</span></div>
+        {{#if incident.year}}<div>السنة: {{incident.year}}</div>{{/if}}
       </div>
     </div>
 
     {{#if incident.contradictions.detected}}
       <div class="alert">
-        <h2>⚠ Conflicting reports</h2>
-        <p>Sources disagree on the following fields:</p>
+        <h2>⚠ تقارير متضاربة</h2>
+        <p>تختلف المصادر على الحقول التالية:</p>
         <ul>
           {{#each incident.contradictions.disagreements}}
             <li>
-              <strong>{{humanize field}}:</strong>
+              <strong>{{translateField field}}:</strong>
               {{#each values}}
                 <span class="value">{{value}}</span>
                 <span class="muted">({{organizationName}})</span>{{#unless
@@ -251,24 +249,24 @@
       </div>
     {{/if}}
 
-    <h2>Incident details</h2>
+    <h2>تفاصيل الحادثة</h2>
     <dl class="grid">
-      <dt>Date</dt>
+      <dt>التاريخ</dt>
       <dd>{{#if incident.date}}{{formatDate incident.date}}{{else}}<span
             class="muted"
-          >Unknown</span>{{/if}}</dd>
+          >غير معروف</span>{{/if}}</dd>
 
-      <dt>Location</dt>
+      <dt>الموقع</dt>
       <dd>{{#if incident.location}}{{incident.location}}{{else}}<span
             class="muted"
-          >Unknown</span>{{/if}}</dd>
+          >غير معروف</span>{{/if}}</dd>
 
       {{#if incident.region}}
-        <dt>Region</dt>
+        <dt>المنطقة</dt>
         <dd>{{incident.region}}</dd>
       {{/if}}
 
-      <dt>Coordinates</dt>
+      <dt>الإحداثيات</dt>
       <dd>
         {{#if incident.coordinates}}
           {{incident.coordinates}}
@@ -280,70 +278,70 @@
           {{incident.latitude}},
           {{incident.longitude}}
         {{else}}
-          <span class="muted">Unknown</span>
+          <span class="muted">غير معروف</span>
         {{/if}}
       </dd>
 
       {{#if incident.route}}
-        <dt>Migration route</dt>
+        <dt>مسار الهجرة</dt>
         <dd>{{incident.route}}</dd>
       {{/if}}
 
       {{#if incident.causeOfDeath}}
-        <dt>Cause</dt>
+        <dt>السبب</dt>
         <dd>{{incident.causeOfDeath}}</dd>
       {{/if}}
 
       {{#if incident.totalCasualties}}
-        <dt>Total casualties</dt>
+        <dt>إجمالي الضحايا</dt>
         <dd><strong>{{incident.totalCasualties}}</strong></dd>
       {{/if}}
 
       {{#if incident.sourceOrg}}
-        <dt>Source organization</dt>
+        <dt>المنظمة المصدر</dt>
         <dd>
           {{incident.sourceOrg.name}}
           {{#if incident.sourceOrg.acronym}}
             ({{incident.sourceOrg.acronym}}){{/if}}
-          <span class="muted small">— reliability
+          <span class="muted small">— الموثوقية
             {{formatConfidence incident.sourceOrg.reliabilityScore}}</span>
         </dd>
       {{/if}}
 
       {{#if incident.sourceUrl}}
-        <dt>Source URL</dt>
+        <dt>رابط المصدر</dt>
         <dd class="small">{{incident.sourceUrl}}</dd>
       {{/if}}
     </dl>
 
     {{#if hasDemographics}}
-      <h2>Demographics</h2>
+      <h2>التركيبة السكانية</h2>
       <table>
         <thead>
-          <tr><th>Category</th><th>Count</th></tr>
+          <tr><th>الفئة</th><th>العدد</th></tr>
         </thead>
         <tbody>
-          {{#if incident.demographics.men}}<tr><td>Men</td><td
+          {{#if incident.demographics.men}}<tr><td>رجال</td><td
               >{{incident.demographics.men}}</td></tr>{{/if}}
-          {{#if incident.demographics.women}}<tr><td>Women</td><td
+          {{#if incident.demographics.women}}<tr><td>نساء</td><td
               >{{incident.demographics.women}}</td></tr>{{/if}}
-          {{#if incident.demographics.children}}<tr><td>Children</td><td
+          {{#if incident.demographics.children}}<tr><td>أطفال</td><td
               >{{incident.demographics.children}}</td></tr>{{/if}}
         </tbody>
       </table>
     {{/if}}
 
-    <h2>Source claims ({{incident.claims.length}})</h2>
+    <h2>ادعاءات المصادر ({{incident.claims.length}})</h2>
     {{#if incident.claims.length}}
       <table>
         <thead>
           <tr>
-            <th>Organization</th>
-            <th>Date</th>
-            <th>Dead</th>
-            <th>Missing</th>
-            <th>Survivors</th>
-            <th>Quality</th>
+            <th>المنظمة</th>
+            <th>التاريخ</th>
+            <th>وفيات</th>
+            <th>مفقودون</th>
+            <th>ناجون</th>
+            <th>الجودة</th>
           </tr>
         </thead>
         <tbody>
@@ -354,7 +352,7 @@
                 {{#if organization.acronym}}<span
                     class="muted small"
                   >({{organization.acronym}})</span>{{/if}}
-                {{#unless fromSourceFile}}<span class="muted small">· manual</span>{{/unless}}
+                {{#unless fromSourceFile}}<span class="muted small">· يدوي</span>{{/unless}}
               </td>
               <td>{{#if reportedDate}}{{formatDate
                     reportedDate
@@ -383,24 +381,24 @@
         {{/if}}
       {{/each}}
     {{else}}
-      <p class="muted">No source claims recorded for this incident.</p>
+      <p class="muted">لا توجد ادعاءات مصادر مسجلة لهذه الحادثة.</p>
     {{/if}}
 
-    <h2>Evidence ({{incident.evidence.length}})</h2>
+    <h2>الأدلة ({{incident.evidence.length}})</h2>
     {{#if incident.evidence.length}}
       {{#each incident.evidence}}
         <div class="evidence-item">
           <div class="title">
             <span>
               {{title}}
-              {{#if isVerified}}<span class="verified">✓ verified</span>{{/if}}
+              {{#if isVerified}}<span class="verified">✓ موثّق</span>{{/if}}
             </span>
-            <span class="muted small">{{type}}</span>
+            <span class="muted small">{{translateEvidenceType type}}</span>
           </div>
           <div class="meta">
-            {{#if submittedBy}}Submitted by {{submittedBy}} · {{/if}}
+            {{#if submittedBy}}قدّمه {{submittedBy}} · {{/if}}
             {{formatDate createdAt}}
-            {{#if fileUrl}} · <span class="muted">attachment</span>{{/if}}
+            {{#if fileUrl}} · <span class="muted">مرفق</span>{{/if}}
           </div>
           {{#if description}}
             <div class="description">{{description}}</div>
@@ -408,13 +406,13 @@
         </div>
       {{/each}}
     {{else}}
-      <p class="muted">No evidence attached to this incident.</p>
+      <p class="muted">لا توجد أدلة مرفقة بهذه الحادثة.</p>
     {{/if}}
 
     <div class="footer">
-      Generated from ingested source data. Not a legal record.
+      تم إنشاؤه من بيانات المصادر المُدخلة. ليس سجلاً قانونياً.
       <br />
-      Incident ID:
+      معرّف الحادثة:
       {{incident.id}}
     </div>
 
