@@ -1,0 +1,432 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Case {{profile.id}}</title>
+    <style>
+      /* Print-specific: @page controls margins and page numbers. */
+      @page {
+        size: A4;
+        margin: 18mm 16mm 22mm 16mm;
+      }
+
+      /* Puppeteer prints backgrounds only if you say printBackground: true.
+       We do, so use colors freely — but keep them light for printing. */
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        color: #1a1a1a;
+        font-size: 11pt;
+        line-height: 1.45;
+        margin: 0;
+      }
+
+      /* Arabic content gets its own font stack. Chrome will fall back
+       to a system Arabic font; specify them so shaping is predictable. */
+      .arabic {
+        font-family: "Noto Naskh Arabic", "Amiri", "Scheherazade New", serif;
+        direction: rtl;
+        unicode-bidi: isolate;
+      }
+
+      h1 {
+        font-size: 20pt;
+        margin: 0 0 4px 0;
+      }
+      h2 {
+        font-size: 13pt;
+        margin: 22px 0 8px 0;
+        border-bottom: 1.5px solid #ccc;
+        padding-bottom: 4px;
+      }
+      h3 {
+        font-size: 11pt;
+        margin: 14px 0 6px 0;
+      }
+
+      /* Header block */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 2px solid #333;
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+      }
+      .header .meta {
+        text-align: right;
+        font-size: 9pt;
+        color: #666;
+      }
+      .header .meta div {
+        margin: 2px 0;
+      }
+
+      /* Identity block: a two-column layout using CSS grid. */
+      .identity {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 6px 14px;
+        margin: 12px 0 4px 0;
+      }
+      .identity dt {
+        font-weight: 600;
+        color: #444;
+      }
+      .identity dd {
+        margin: 0;
+      }
+
+      /* Status badge — color depends on status. We compute the class in code. */
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 9pt;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+      .badge.alive {
+        background: #d4f4dd;
+        color: #155724;
+      }
+      .badge.deceased {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .badge.missing {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .badge.detained {
+        background: #d1ecf1;
+        color: #0c5460;
+      }
+      .badge.unknown {
+        background: #e2e3e5;
+        color: #383d41;
+      }
+
+      /* Alert box for contradictions */
+      .alert {
+        border-left: 4px solid #c0392b;
+        background: #fdf2f2;
+        padding: 10px 14px;
+        margin: 14px 0;
+        page-break-inside: avoid;
+      }
+      .alert h3 {
+        margin-top: 0;
+        color: #c0392b;
+      }
+      .alert ul {
+        margin: 6px 0 0 0;
+        padding-left: 18px;
+      }
+
+      /* Timeline */
+      .timeline-year {
+        margin-top: 18px;
+      }
+      .timeline-year h3 {
+        margin: 0 0 8px 0;
+        color: #333;
+        font-size: 11pt;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .event {
+        border-left: 3px solid #b8b8b8;
+        padding: 6px 0 6px 12px;
+        margin: 0 0 10px 4px;
+        page-break-inside: avoid;
+      }
+      .event .event-header {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+      .event .org {
+        color: #2c3e50;
+      }
+      .event .date {
+        color: #666;
+        font-weight: 400;
+        font-size: 10pt;
+      }
+      .event .details {
+        font-size: 10pt;
+        color: #333;
+      }
+      .event .details div {
+        margin: 1px 0;
+      }
+      .event .summary {
+        font-size: 9.5pt;
+        color: #555;
+        margin-top: 4px;
+        white-space: pre-wrap;
+      }
+
+      /* Tables */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9.5pt;
+        margin-top: 6px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 5px 8px;
+        border-bottom: 1px solid #ddd;
+        vertical-align: top;
+      }
+      th {
+        background: #f4f4f4;
+        font-weight: 600;
+        font-size: 9pt;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      tr {
+        page-break-inside: avoid;
+      }
+
+      /* Small type utilities */
+      .muted {
+        color: #888;
+      }
+      .small {
+        font-size: 9pt;
+      }
+
+      /* Footer pinned to the bottom of the last page. Puppeteer's page.pdf
+       also supports headerTemplate/footerTemplate for per-page footers —
+       this is a "last page" fallback. */
+      .footer {
+        margin-top: 40px;
+        padding-top: 10px;
+        border-top: 1px solid #ccc;
+        font-size: 8.5pt;
+        color: #888;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="header">
+      <div>
+        <h1>{{#if
+            profile.canonicalName
+          }}{{profile.canonicalName}}{{else}}Unidentified case{{/if}}</h1>
+        <div class="muted small">Case ID: {{profile.id}}</div>
+      </div>
+      <div class="meta">
+        <div>Generated {{generatedAt}}</div>
+        <div>Status:
+          <span class="badge {{statusClass}}">{{profile.resolvedStatus}}</span>
+        </div>
+        {{#if profile.profileStatus}}<div>Profile:
+            {{profile.profileStatus}}</div>{{/if}}
+      </div>
+    </div>
+
+    <h2>Identity</h2>
+    <dl class="identity">
+      <dt>Status</dt>
+      <dd>{{profile.resolvedStatus}}</dd>
+
+      <dt>Location</dt>
+      <dd>{{#if
+          profile.resolvedLocation
+        }}{{profile.resolvedLocation}}{{else}}<span
+            class="muted"
+          >Unknown</span>{{/if}}</dd>
+
+      <dt>Birth year</dt>
+      <dd>{{#if
+          profile.resolvedBirthYear
+        }}{{profile.resolvedBirthYear}}{{else}}<span
+            class="muted"
+          >Unknown</span>{{/if}}</dd>
+
+      <dt>Event date</dt>
+      <dd>{{#if profile.resolvedEventDate}}{{formatDate
+            profile.resolvedEventDate
+          }}{{else}}<span class="muted">Unknown</span>{{/if}}</dd>
+
+      {{#if profile.knownNames.length}}
+        <dt>Known spellings</dt>
+        <dd>
+          {{#each profile.knownNames}}
+            <div>{{this}}</div>
+          {{/each}}
+        </dd>
+      {{/if}}
+
+      <dt>Linked sources</dt>
+      <dd>{{profile.linkages.length}}
+        record{{#unless (eq profile.linkages.length 1)}}s{{/unless}}
+        from
+        {{organizationCount}}
+        organization{{#unless (eq organizationCount 1)}}s{{/unless}}</dd>
+    </dl>
+
+    {{#if profile.contradictions.conflictDetected}}
+      <div class="alert">
+        <h3>⚠ Contradictory reports</h3>
+        <p>Sources disagree on this case. The following reports conflict:</p>
+        <ul>
+          {{#each profile.contradictions.contradictions}}
+            <li>
+              <strong>{{org}}</strong>
+              reported
+              <em>{{status}}</em>
+              {{#if date}}({{date}}){{/if}}
+            </li>
+          {{/each}}
+        </ul>
+      </div>
+    {{/if}}
+
+    <h2>Timeline</h2>
+    {{#each profile.timeline}}
+      <div class="timeline-year">
+        <h3>{{#if year}}{{year}}{{else}}Undated{{/if}}</h3>
+        {{#each records}}
+          <div class="event">
+            <div class="event-header">
+              <span class="org">{{organization.name}}{{#if
+                  organization.acronym
+                }} ({{organization.acronym}}){{/if}}</span>
+              <span class="date">
+                {{#if rawRecord.eventDate}}{{formatDate
+                    rawRecord.eventDate
+                  }}{{else}}—{{/if}}
+              </span>
+            </div>
+            <div class="details">
+              <div><strong>Status:</strong> {{rawRecord.vitalStatus}}</div>
+              {{#if rawRecord.location}}<div><strong>Location:</strong>
+                  {{rawRecord.location}}</div>{{/if}}
+              {{#if rawRecord.extractedName}}<div><strong>Name in source:</strong>
+                  {{rawRecord.extractedName}}</div>{{/if}}
+              <div><strong>Confidence:</strong>
+                {{formatConfidence confidenceScore}}
+                {{#if matchMethod}}·
+                  <span class="muted">{{matchMethod}}</span>{{/if}}
+                {{#if reviewStatus}}·
+                  <span class="muted">{{reviewStatus}}</span>{{/if}}
+              </div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{/each}}
+
+    <h2>All source records</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Source</th>
+          <th>Location</th>
+          <th>Status</th>
+          <th>Confidence</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each profile.linkages}}
+          <tr>
+            <td>{{#if rawRecord.eventDate}}{{formatDate
+                  rawRecord.eventDate
+                }}{{else}}—{{/if}}</td>
+            <td>{{organization.name}}{{#if organization.acronym}}
+                ({{organization.acronym}}){{/if}}</td>
+            <td>{{#if
+                rawRecord.location
+              }}{{rawRecord.location}}{{else}}—{{/if}}</td>
+            <td>{{rawRecord.vitalStatus}}</td>
+            <td>{{formatConfidence confidenceScore}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    {{#if profile.fieldProvenance}}
+      <h2>Field provenance</h2>
+      <p class="small muted">Which source record each resolved field came from.</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Value</th><th>Source record</th><th
+            >Reliability</th></tr>
+        </thead>
+        <tbody>
+          {{#if profile.fieldProvenance.canonicalName}}
+            <tr>
+              <td>Canonical name</td>
+              <td>{{profile.canonicalName}}</td>
+              <td
+                class="small"
+              >{{profile.fieldProvenance.canonicalName.rawRecordId}}</td>
+              <td>{{formatConfidence
+                  profile.fieldProvenance.canonicalName.reliabilityScore
+                }}</td>
+            </tr>
+          {{/if}}
+          {{#if profile.fieldProvenance.resolvedStatus}}
+            <tr>
+              <td>Status</td>
+              <td>{{profile.fieldProvenance.resolvedStatus.value}}</td>
+              <td
+                class="small"
+              >{{profile.fieldProvenance.resolvedStatus.rawRecordId}}</td>
+              <td>{{formatConfidence
+                  profile.fieldProvenance.resolvedStatus.reliabilityScore
+                }}</td>
+            </tr>
+          {{/if}}
+          {{#if profile.fieldProvenance.resolvedLocation}}
+            <tr>
+              <td>Location</td>
+              <td>{{profile.fieldProvenance.resolvedLocation.value}}</td>
+              <td
+                class="small"
+              >{{profile.fieldProvenance.resolvedLocation.rawRecordId}}</td>
+              <td>{{formatConfidence
+                  profile.fieldProvenance.resolvedLocation.reliabilityScore
+                }}</td>
+            </tr>
+          {{/if}}
+          {{#if profile.fieldProvenance.resolvedEventDate}}
+            <tr>
+              <td>Event date</td>
+              <td>{{profile.fieldProvenance.resolvedEventDate.value}}</td>
+              <td
+                class="small"
+              >{{profile.fieldProvenance.resolvedEventDate.rawRecordId}}</td>
+              <td>{{formatConfidence
+                  profile.fieldProvenance.resolvedEventDate.reliabilityScore
+                }}</td>
+            </tr>
+          {{/if}}
+        </tbody>
+      </table>
+    {{/if}}
+
+    <div class="footer">
+      This document is generated from ingested source data. It is not a legal
+      record.
+      <br />
+      Missing Persons Registry · Case
+      {{profile.id}}
+    </div>
+
+  </body>
+</html>
