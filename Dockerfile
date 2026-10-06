@@ -16,8 +16,17 @@ FROM node:22-bookworm-slim AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && apt-get install -y --no-install-recommends \
+      openssl \
+      ca-certificates \
+      chromium \
+      fonts-liberation \
+      fonts-noto-core \
+      fonts-noto-naskh-arabic \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
