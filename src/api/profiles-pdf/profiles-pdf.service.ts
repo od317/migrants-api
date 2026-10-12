@@ -11,7 +11,8 @@ import {
   ProfilesService,
   type ProfileDetail,
 } from "../profiles/profiles.service";
-import { buildCaseHtml } from "./html-builder";
+import type { SearchProfilesQueryDto } from "../profiles/dto/search-profiles.query";
+import { buildCaseHtml, buildProfilesSummaryHtml } from "./html-builder";
 
 export type RenderedPdf = {
   buffer: Buffer;
@@ -93,6 +94,18 @@ export class ProfilesPdfService implements OnModuleInit, OnModuleDestroy {
       buffer,
       filename: this.filenameFor(profile),
       asciiFallback: `case-${profile.id.slice(0, 8)}.pdf`,
+    };
+  }
+
+  async renderAll(query: SearchProfilesQueryDto): Promise<RenderedPdf> {
+    const profiles = await this.profiles.searchAll(query);
+    const html = await buildProfilesSummaryHtml(profiles);
+    const buffer = await this.renderPdf(html);
+    const date = new Date().toISOString().slice(0, 10);
+    return {
+      buffer,
+      filename: `case-summaries-${date}.pdf`,
+      asciiFallback: `case-summaries-${date}.pdf`,
     };
   }
 

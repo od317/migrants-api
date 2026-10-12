@@ -1,12 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, ProfileStatus, VitalStatus } from '@prisma/client';
-import { normalizePersonName } from '../../matching/normalize-name';
-import { PrismaService } from '../../prisma/prisma.service';
-import { ConflictReport, RecordLinkageService } from '../../resolution/record-linkage.service';
-import { SearchProfilesQueryDto } from './dto/search-profiles.query';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma, ProfileStatus, VitalStatus } from "@prisma/client";
+import { normalizePersonName } from "../../matching/normalize-name";
+import { PrismaService } from "../../prisma/prisma.service";
+import {
+  ConflictReport,
+  RecordLinkageService,
+} from "../../resolution/record-linkage.service";
+import { SearchProfilesQueryDto } from "./dto/search-profiles.query";
 
 const DEFAULT_LIMIT = 50;
-const ARABIC_MARKS = '[\u064B-\u065F\u0670]';
+const ARABIC_MARKS = "[\u064B-\u065F\u0670]";
 
 export type ProfileSummary = {
   id: string;
@@ -124,11 +127,13 @@ export class ProfilesService {
         where,
         skip: offset,
         take: limit,
-        orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }],
+        orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
       }),
     ]);
 
-    const stats = await this.linkageStats(profiles.map((profile) => profile.id));
+    const stats = await this.linkageStats(
+      profiles.map((profile) => profile.id),
+    );
 
     return {
       total,
@@ -153,13 +158,29 @@ export class ProfilesService {
     };
   }
 
+  async searchAll(query: SearchProfilesQueryDto): Promise<ProfileSummary[]> {
+    const profiles: ProfileSummary[] = [];
+    let offset = 0;
+    let total = Number.POSITIVE_INFINITY;
+
+    while (offset < total) {
+      const page = await this.search({ ...query, limit: 100, offset });
+      profiles.push(...page.data);
+      total = page.total;
+      if (page.data.length === 0) break;
+      offset += page.data.length;
+    }
+
+    return profiles;
+  }
+
   async findOne(id: string): Promise<ProfileDetail> {
     const existing = await this.prisma.masterProfile.findUnique({
       where: { id },
       select: { hasConflict: true },
     });
     if (!existing) {
-      throw new NotFoundException('Master profile not found');
+      throw new NotFoundException("Master profile not found");
     }
 
     const contradictions = existing.hasConflict
@@ -171,7 +192,7 @@ export class ProfilesService {
       include: profileInclude,
     });
     if (!profile) {
-      throw new NotFoundException('Master profile not found');
+      throw new NotFoundException("Master profile not found");
     }
 
     const records = profile.linkages
@@ -249,7 +270,7 @@ export class ProfilesService {
 
     if (query.governorate) {
       filters.push({
-        resolvedLocation: { contains: query.governorate, mode: 'insensitive' },
+        resolvedLocation: { contains: query.governorate, mode: "insensitive" },
       });
     }
     if (query.yearOfBirth != null) {
@@ -295,14 +316,27 @@ export class ProfilesService {
 
   private async linkageStats(
     profileIds: string[],
-  ): Promise<Map<string, { count: number; organizations: number; average: number | null }>> {
-    const stats = new Map<string, { count: number; organizations: number; average: number | null }>();
+  ): Promise<
+    Map<
+      string,
+      { count: number; organizations: number; average: number | null }
+    >
+  > {
+    const stats = new Map<
+      string,
+      { count: number; organizations: number; average: number | null }
+    >();
     if (profileIds.length === 0) {
       return stats;
     }
 
     const aggregates = await this.prisma.$queryRaw<
-      Array<{ id: string; links: number; organizations: number; average: number | null }>
+      Array<{
+        id: string;
+        links: number;
+        organizations: number;
+        average: number | null;
+      }>
     >(Prisma.sql`
       SELECT l."masterProfileId" AS id,
              COUNT(*)::int AS links,
@@ -318,7 +352,10 @@ export class ProfilesService {
       stats.set(aggregate.id, {
         count: aggregate.links,
         organizations: aggregate.organizations,
-        average: aggregate.average == null ? null : roundAverage(Number(aggregate.average)),
+        average:
+          aggregate.average == null
+            ? null
+            : roundAverage(Number(aggregate.average)),
       });
     }
     return stats;
@@ -376,18 +413,27 @@ function groupChronologically(records: LinkedObservation[]): TimelineGroup[] {
   }));
 }
 
-function byEventThenReport(left: LinkedObservation, right: LinkedObservation): number {
-  const leftEvent = left.rawRecord.eventDate?.getTime() ?? Number.POSITIVE_INFINITY;
-  const rightEvent = right.rawRecord.eventDate?.getTime() ?? Number.POSITIVE_INFINITY;
+function byEventThenReport(
+  left: LinkedObservation,
+  right: LinkedObservation,
+): number {
+  const leftEvent =
+    left.rawRecord.eventDate?.getTime() ?? Number.POSITIVE_INFINITY;
+  const rightEvent =
+    right.rawRecord.eventDate?.getTime() ?? Number.POSITIVE_INFINITY;
   if (leftEvent !== rightEvent) {
     return leftEvent - rightEvent;
   }
-  const leftReported = left.rawRecord.reportedAt?.getTime() ?? Number.POSITIVE_INFINITY;
-  const rightReported = right.rawRecord.reportedAt?.getTime() ?? Number.POSITIVE_INFINITY;
+  const leftReported =
+    left.rawRecord.reportedAt?.getTime() ?? Number.POSITIVE_INFINITY;
+  const rightReported =
+    right.rawRecord.reportedAt?.getTime() ?? Number.POSITIVE_INFINITY;
   if (leftReported !== rightReported) {
     return leftReported - rightReported;
   }
-  return left.rawRecord.ingestedAt.getTime() - right.rawRecord.ingestedAt.getTime();
+  return (
+    left.rawRecord.ingestedAt.getTime() - right.rawRecord.ingestedAt.getTime()
+  );
 }
 
 function escapeLike(value: string): string {

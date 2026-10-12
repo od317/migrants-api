@@ -29,6 +29,30 @@ export class ProfilesController {
     return this.profilesService.search(query);
   }
 
+  @Get("pdf")
+  @ApiOperation({
+    summary: "Download a PDF summary of all cases",
+    description:
+      "Renders all matching profiles as a paginated summary report. Search filters are supported; pagination parameters are ignored.",
+  })
+  @ApiProduces("application/pdf")
+  async downloadAllPdf(
+    @Query() query: SearchProfilesQueryDto,
+    @Res() response: Response,
+  ): Promise<void> {
+    const { buffer, filename, asciiFallback } =
+      await this.profilesPdf.renderAll(query);
+
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    );
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader("Content-Length", buffer.length.toString());
+    response.setHeader("Cache-Control", "private, max-age=0, must-revalidate");
+    response.end(buffer);
+  }
+
   // IMPORTANT: declare this BEFORE `@Get(':id')`.
   // Nest matches routes in declaration order within a controller.
   // `:id/pdf` has two segments so it wouldn't actually be shadowed by `:id`,

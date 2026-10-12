@@ -1,28 +1,35 @@
-import { randomUUID } from 'node:crypto';
-import { mkdirSync } from 'node:fs';
-import { readdir, rename, rm } from 'node:fs/promises';
-import { extname, join, resolve } from 'node:path';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, VitalStatus } from '@prisma/client';
-import { diskStorage } from 'multer';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateIncidentEvidenceDto } from './dto/create-incident-evidence.dto';
-import { ListIncidentsQueryDto } from './dto/list-incidents.query';
+import { randomUUID } from "node:crypto";
+import { mkdirSync } from "node:fs";
+import { readdir, rename, rm } from "node:fs/promises";
+import { extname, join, resolve } from "node:path";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { EvidenceType, Prisma, VitalStatus } from "@prisma/client";
+import { diskStorage } from "multer";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateIncidentEvidenceDto } from "./dto/create-incident-evidence.dto";
+import {
+  ListIncidentsQueryDto,
+  type IncidentSort,
+} from "./dto/list-incidents.query";
 
 const DEFAULT_LIMIT = 50;
 export const EVIDENCE_MAX_BYTES = 15 * 1024 * 1024;
-export const EVIDENCE_DIR = join(process.cwd(), 'uploads', 'evidence');
+export const EVIDENCE_DIR = join(process.cwd(), "uploads", "evidence");
 const EVIDENCE_EXTENSIONS = new Set([
-  '.pdf',
-  '.png',
-  '.jpg',
-  '.jpeg',
-  '.webp',
-  '.csv',
-  '.xlsx',
-  '.txt',
-  '.doc',
-  '.docx',
+  ".pdf",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".csv",
+  ".xlsx",
+  ".txt",
+  ".doc",
+  ".docx",
 ]);
 
 const organizationSelect = {
@@ -39,7 +46,10 @@ export function evidenceUploadOptions() {
     storage: diskStorage({
       destination: EVIDENCE_DIR,
       filename: (_req, file, callback) => {
-        callback(null, `${randomUUID()}${extname(file.originalname).toLowerCase()}`);
+        callback(
+          null,
+          `${randomUUID()}${extname(file.originalname).toLowerCase()}`,
+        );
       },
     }),
     limits: { fileSize: EVIDENCE_MAX_BYTES },
@@ -87,6 +97,16 @@ export type IncidentStats = {
   }>;
 };
 
+export type Facet = { value: string; count: number };
+
+export type IncidentFacets = {
+  routes: Facet[];
+  causes: Facet[];
+  statuses: Facet[];
+  years: Facet[];
+  sourceOrgs: Facet[];
+};
+
 @Injectable()
 export class IncidentsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -96,46 +116,81 @@ export class IncidentsService {
     const offset = query.offset ?? 0;
     const where = this.buildWhere(query);
 
-    const [total, records] = await Promise.all([
-      this.prisma.rawRecord.count({ where }),
-      this.prisma.rawRecord.findMany({
-        where,
-        skip: offset,
-        take: limit,
-        orderBy: [{ eventDate: 'desc' }, { sourceLocator: 'asc' }],
-        include: {
-          organization: {
-            select: { id: true, name: true, acronym: true, reliabilityScore: true },
+    // Casualty sorts need JSONB extraction that Prisma's query builder can't
+    // express, so they take a raw-SQL path. Date sorts use the normal path.
+    const orderBy = orderByFor(query.sort);
+
+    if (orderBy) {
+      const [total, records] = await Promise.all([
+        this.prisma.rawRecord.count({ where }),
+        this.prisma.rawRecord.findMany({
+          where,
+          skip: offset,
+          take: limit,
+          orderBy,
+          include: {
+            organization: {
+              select: {
+                id: true,
+                name: true,
+                acronym: true,
+                reliabilityScore: true,
+              },
+            },
+          },
+        }),
+      ]);
+      return this.toPage(total, limit, offset, records);
+    }
+
+    // Casualty sort: raw SQL for ordering, then fetch full rows and re-order.
+    const direction = query.sort === "casualties_asc" ? "ASC" : "DESC";
+    const whereClause = casualtyWhereClause(where);
+
+    const ids = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+      SELECT id
+      FROM raw_records
+      WHERE ${whereClause}
+      ORDER BY COALESCE(NULLIF(payload #>> '{metadata,totalCasualties}', '')::numeric, 0) ${Prisma.raw(direction)},
+               "eventDate" DESC NULLS LAST,
+               "sourceLocator" ASC
+      LIMIT ${limit} OFFSET ${offset}
+    `);
+
+    const totalRows = await this.prisma.$queryRaw<Array<{ total: number }>>(
+      Prisma.sql`
+        SELECT COUNT(*)::int AS total
+        FROM raw_records
+        WHERE ${whereClause}
+      `,
+    );
+    const total = Number(totalRows[0]?.total ?? 0);
+
+    if (ids.length === 0) {
+      return { total, limit, offset, data: [] };
+    }
+
+    const records = await this.prisma.rawRecord.findMany({
+      where: { id: { in: ids.map((row) => row.id) } },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            acronym: true,
+            reliabilityScore: true,
           },
         },
-      }),
-    ]);
+      },
+    });
+    const byId = new Map(records.map((record) => [record.id, record]));
+    const ordered = ids
+      .map((row) => byId.get(row.id))
+      .filter((record): record is NonNullable<typeof record> =>
+        Boolean(record),
+      );
 
-    return {
-      total,
-      limit,
-      offset,
-      data: records.map((record) => {
-        const metadata = readMetadata(record.payload);
-        const coordinates = readCoordinatesText(record.payload);
-        return {
-          id: record.id,
-          sourceRecordId: record.sourceLocator,
-          date: record.eventDate ? record.eventDate.toISOString().slice(0, 10) : metadata.date,
-          year: record.eventDate ? record.eventDate.getUTCFullYear() : null,
-          location: record.location,
-          latitude: record.latitude,
-          longitude: record.longitude,
-          coordinates,
-          status: record.vitalStatus,
-          route: metadata.route,
-          causeOfDeath: metadata.causeOfDeath,
-          totalCasualties: metadata.totalCasualties,
-          sourceUrl: metadata.sourceUrl,
-          sourceOrg: record.organization,
-        };
-      }),
-    };
+    return this.toPage(total, limit, offset, ordered);
   }
 
   async findOne(id: string) {
@@ -143,30 +198,46 @@ export class IncidentsService {
       where: { id },
       include: {
         organization: {
-          select: { id: true, name: true, acronym: true, reliabilityScore: true, url: true },
+          select: {
+            id: true,
+            name: true,
+            acronym: true,
+            reliabilityScore: true,
+            url: true,
+          },
         },
         claims: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
           include: {
             organization: {
-              select: { id: true, name: true, acronym: true, reliabilityScore: true, url: true },
+              select: {
+                id: true,
+                name: true,
+                acronym: true,
+                reliabilityScore: true,
+                url: true,
+              },
             },
           },
         },
         evidence: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
         },
       },
     });
     if (!record) {
-      throw new NotFoundException('Incident not found');
+      throw new NotFoundException("Incident not found");
     }
 
     const metadata = readMetadata(record.payload);
     const sourceRow = readSourceRow(record.payload);
     const coordinates = readCoordinatesText(record.payload);
     const fileClaim = claimFromRecord(record);
-    const peers = await this.peerRecords(record.id, record.eventDate, coordinates);
+    const peers = await this.peerRecords(
+      record.id,
+      record.eventDate,
+      coordinates,
+    );
     const claims = dedupeClaims([
       fileClaim,
       ...peers.map((peer) => claimFromRecord(peer)),
@@ -177,7 +248,9 @@ export class IncidentsService {
         reportedDead: claim.reportedDead,
         reportedMissing: claim.reportedMissing,
         reportedSurvivors: claim.reportedSurvivors,
-        reportedDate: claim.reportedDate ? claim.reportedDate.toISOString().slice(0, 10) : null,
+        reportedDate: claim.reportedDate
+          ? claim.reportedDate.toISOString().slice(0, 10)
+          : null,
         summary: claim.summary,
         sourceUrl: claim.sourceUrl,
         sourceQuality: claim.sourceQuality,
@@ -191,20 +264,23 @@ export class IncidentsService {
       date: fileClaim.reportedDate,
       year: record.eventDate ? record.eventDate.getUTCFullYear() : null,
       location: record.location,
-      region: readText(sourceRow, ['region of incident', 'admin1', 'region']),
+      region: readText(sourceRow, ["region of incident", "admin1", "region"]),
       latitude: record.latitude,
       longitude: record.longitude,
       coordinates,
       status: record.vitalStatus,
-      route: metadata.route ?? readText(sourceRow, ['migration route', 'event_type', 'event type']),
+      route:
+        metadata.route ??
+        readText(sourceRow, ["migration route", "event_type", "event type"]),
       causeOfDeath: metadata.causeOfDeath,
-      totalCasualties: metadata.totalCasualties ?? readCount(sourceRow, ['fatalities']),
+      totalCasualties:
+        metadata.totalCasualties ?? readCount(sourceRow, ["fatalities"]),
       sourceUrl: metadata.sourceUrl,
       sourceOrg: record.organization,
       demographics: {
-        men: readCount(sourceRow, ['number of males']),
-        women: readCount(sourceRow, ['number of females']),
-        children: readCount(sourceRow, ['number of children']),
+        men: readCount(sourceRow, ["number of males"]),
+        women: readCount(sourceRow, ["number of females"]),
+        children: readCount(sourceRow, ["number of children"]),
       },
       claims,
       evidence: record.evidence,
@@ -223,13 +299,15 @@ export class IncidentsService {
     });
     if (!incident) {
       if (file) await rm(file.path, { force: true });
-      throw new NotFoundException('Incident not found');
+      throw new NotFoundException("Incident not found");
     }
 
-    const extension = file ? extname(file.originalname).toLowerCase() : '';
+    const extension = file ? extname(file.originalname).toLowerCase() : "";
     if (file && !EVIDENCE_EXTENSIONS.has(extension)) {
       await rm(file.path, { force: true });
-      throw new BadRequestException('Attachment must be PDF, image, CSV, XLSX, or a text document');
+      throw new BadRequestException(
+        "Attachment must be PDF, image, CSV, XLSX, or a text document",
+      );
     }
 
     const created = await this.prisma.incidentEvidence.create({
@@ -259,7 +337,9 @@ export class IncidentsService {
 
     return this.prisma.incidentEvidence.update({
       where: { id: created.id },
-      data: { fileUrl: `/api/incidents/${incidentId}/evidence/${created.id}/file` },
+      data: {
+        fileUrl: `/api/incidents/${incidentId}/evidence/${created.id}/file`,
+      },
     });
   }
 
@@ -269,38 +349,20 @@ export class IncidentsService {
     });
     const downloadPath = `/api/incidents/${incidentId}/evidence/${evidenceId}/file`;
     if (!evidence || evidence.fileUrl !== downloadPath) {
-      throw new NotFoundException('Attachment not found');
+      throw new NotFoundException("Attachment not found");
     }
     const names = await readdir(EVIDENCE_DIR);
-    const stored = names.find((name) => name.startsWith(`${evidenceId}.`) || name === evidenceId);
+    const stored = names.find(
+      (name) => name.startsWith(`${evidenceId}.`) || name === evidenceId,
+    );
     if (!stored) {
-      throw new NotFoundException('Attachment not found');
+      throw new NotFoundException("Attachment not found");
     }
     const absolute = resolve(EVIDENCE_DIR, stored);
     if (!absolute.startsWith(resolve(EVIDENCE_DIR))) {
-      throw new NotFoundException('Attachment not found');
+      throw new NotFoundException("Attachment not found");
     }
     return { absolute, filename: stored };
-  }
-
-  private async peerRecords(
-    id: string,
-    eventDate: Date | null,
-    coordinates: string | null,
-  ) {
-    if (!eventDate || !coordinates) {
-      return [];
-    }
-    return this.prisma.rawRecord.findMany({
-      where: {
-        id: { not: id },
-        eventDate,
-        payload: { path: ['coordinates'], equals: coordinates },
-      },
-      include: { organization: { select: organizationSelect } },
-      orderBy: { sourceLocator: 'asc' },
-      take: 12,
-    });
   }
 
   async stats(): Promise<IncidentStats> {
@@ -311,7 +373,9 @@ export class IncidentsService {
         FROM raw_records
         WHERE "vitalStatus" = 'DECEASED_OR_MISSING'::"VitalStatus"
       `,
-      this.prisma.$queryRaw<Array<{ route: string; casualties: number; incidents: number }>>`
+      this.prisma.$queryRaw<
+        Array<{ route: string; casualties: number; incidents: number }>
+      >`
         SELECT COALESCE(NULLIF(payload #>> '{metadata,route}', ''), 'Unknown') AS route,
                COALESCE(SUM(${casualtySql}), 0)::float AS casualties,
                COUNT(*)::int AS incidents
@@ -331,7 +395,7 @@ export class IncidentsService {
         SELECT o.name,
                o."reliabilityScore" AS "reliabilityScore",
                COUNT(r.id)::int AS incidents,
-               COALESCE(SUM(${casualtySqlOn('r')}), 0)::float AS casualties
+               COALESCE(SUM(${casualtySqlOn("r")}), 0)::float AS casualties
         FROM raw_records r
         JOIN organizations o ON o.id = r."organizationId"
         WHERE r."vitalStatus" = 'DECEASED_OR_MISSING'::"VitalStatus"
@@ -358,16 +422,165 @@ export class IncidentsService {
     };
   }
 
+  async facets(): Promise<IncidentFacets> {
+    const [routes, causes, statuses, years, sourceOrgs] = await Promise.all([
+      this.prisma.$queryRaw<Array<{ value: string; count: number }>>(Prisma.sql`
+        SELECT COALESCE(NULLIF(payload #>> '{metadata,route}', ''), 'Unknown') AS value,
+               COUNT(*)::int AS count
+        FROM raw_records
+        GROUP BY 1
+        ORDER BY count DESC, value ASC
+      `),
+      this.prisma.$queryRaw<Array<{ value: string; count: number }>>(Prisma.sql`
+        SELECT COALESCE(NULLIF(payload #>> '{metadata,causeOfDeath}', ''), 'Unknown') AS value,
+               COUNT(*)::int AS count
+        FROM raw_records
+        GROUP BY 1
+        ORDER BY count DESC, value ASC
+      `),
+      this.prisma.$queryRaw<Array<{ value: string; count: number }>>(Prisma.sql`
+        SELECT "vitalStatus"::text AS value,
+               COUNT(*)::int AS count
+        FROM raw_records
+        GROUP BY 1
+        ORDER BY count DESC, value ASC
+      `),
+      this.prisma.$queryRaw<Array<{ value: string; count: number }>>(Prisma.sql`
+        SELECT EXTRACT(YEAR FROM "eventDate")::int::text AS value,
+               COUNT(*)::int AS count
+        FROM raw_records
+        WHERE "eventDate" IS NOT NULL
+        GROUP BY 1
+        ORDER BY value DESC
+      `),
+      this.prisma.$queryRaw<Array<{ value: string; count: number }>>(Prisma.sql`
+        SELECT o.name AS value, COUNT(r.id)::int AS count
+        FROM raw_records r
+        JOIN organizations o ON o.id = r."organizationId"
+        GROUP BY 1
+        ORDER BY count DESC, value ASC
+      `),
+    ]);
+
+    return { routes, causes, statuses, years, sourceOrgs };
+  }
+
+  // ---- Private helpers ---------------------------------------------------
+
+  private async peerRecords(
+    id: string,
+    eventDate: Date | null,
+    coordinates: string | null,
+  ) {
+    if (!eventDate || !coordinates) {
+      return [];
+    }
+    return this.prisma.rawRecord.findMany({
+      where: {
+        id: { not: id },
+        eventDate,
+        payload: { path: ["coordinates"], equals: coordinates },
+      },
+      include: { organization: { select: organizationSelect } },
+      orderBy: { sourceLocator: "asc" },
+      take: 12,
+    });
+  }
+
+  private toPage(
+    total: number,
+    limit: number,
+    offset: number,
+    records: Array<{
+      id: string;
+      sourceLocator: string | null;
+      payload: Prisma.JsonValue;
+      vitalStatus: VitalStatus;
+      location: string | null;
+      latitude: number | null;
+      longitude: number | null;
+      eventDate: Date | null;
+      organization: {
+        id: string;
+        name: string;
+        acronym: string | null;
+        reliabilityScore: number;
+      };
+    }>,
+  ): IncidentPage {
+    return {
+      total,
+      limit,
+      offset,
+      data: records.map((record) => {
+        const metadata = readMetadata(record.payload);
+        const coordinates = readCoordinatesText(record.payload);
+        return {
+          id: record.id,
+          sourceRecordId: record.sourceLocator,
+          date: record.eventDate
+            ? record.eventDate.toISOString().slice(0, 10)
+            : metadata.date,
+          year: record.eventDate ? record.eventDate.getUTCFullYear() : null,
+          location: record.location,
+          latitude: record.latitude,
+          longitude: record.longitude,
+          coordinates,
+          status: record.vitalStatus,
+          route: metadata.route,
+          causeOfDeath: metadata.causeOfDeath,
+          totalCasualties: metadata.totalCasualties,
+          sourceUrl: metadata.sourceUrl,
+          sourceOrg: record.organization,
+        };
+      }),
+    };
+  }
+
   private buildWhere(query: ListIncidentsQueryDto): Prisma.RawRecordWhereInput {
     const filters: Prisma.RawRecordWhereInput[] = [
-      { vitalStatus: VitalStatus.DECEASED_OR_MISSING },
+      { vitalStatus: query.status ?? VitalStatus.DECEASED_OR_MISSING },
     ];
-    if (query.route) {
+
+    // Free text across location, name, and source-row notes.
+    if (query.search) {
+      const term = query.search;
       filters.push({
-        payload: { path: ['metadata', 'route'], string_contains: query.route },
+        OR: [
+          { location: { contains: term, mode: "insensitive" } },
+          { extractedName: { contains: term, mode: "insensitive" } },
+          {
+            payload: {
+              path: ["sourceRow", "notes"],
+              string_contains: term,
+            },
+          },
+        ],
       });
     }
-    if (query.year != null) {
+
+    if (query.route) {
+      filters.push({
+        payload: { path: ["metadata", "route"], string_contains: query.route },
+      });
+    }
+
+    if (query.causeOfDeath) {
+      filters.push({
+        payload: {
+          path: ["metadata", "causeOfDeath"],
+          string_contains: query.causeOfDeath,
+        },
+      });
+    }
+
+    // Date range: explicit dates win over year.
+    if (query.dateFrom || query.dateTo) {
+      const range: Prisma.DateTimeNullableFilter = {};
+      if (query.dateFrom) range.gte = asUtcDay(query.dateFrom);
+      if (query.dateTo) range.lte = asUtcDayEnd(query.dateTo);
+      filters.push({ eventDate: range });
+    } else if (query.year != null) {
       filters.push({
         eventDate: {
           gte: new Date(Date.UTC(query.year, 0, 1)),
@@ -375,25 +588,233 @@ export class IncidentsService {
         },
       });
     }
+
     if (query.sourceOrg) {
       filters.push({
-        organization: { name: { contains: query.sourceOrg, mode: 'insensitive' } },
+        organization: {
+          name: { contains: query.sourceOrg, mode: "insensitive" },
+        },
       });
     }
-    if (query.search) {
+
+    // Casualties range: Prisma can't express JSONB numeric comparisons, so
+    // we tag the filter with a marker object that casualtyWhereClause() and
+    // the JSONB-raw-query path both understand.
+    if (query.minCasualties != null || query.maxCasualties != null) {
       filters.push({
-        location: { contains: query.search, mode: 'insensitive' },
-      });
+        AND: [
+          query.minCasualties != null
+            ? { __casualtyMin: query.minCasualties }
+            : {},
+          query.maxCasualties != null
+            ? { __casualtyMax: query.maxCasualties }
+            : {},
+        ].filter((clause) => Object.keys(clause).length > 0),
+      } as unknown as Prisma.RawRecordWhereInput);
     }
+
+    if (query.hasEvidence === true) {
+      filters.push({ evidence: { some: {} } });
+    } else if (query.hasEvidence === false) {
+      filters.push({ evidence: { none: {} } });
+    }
+    if (query.evidenceType) {
+      filters.push({ evidence: { some: { type: query.evidenceType } } });
+    }
+
     return { AND: filters };
   }
 }
+
+// ---- SQL fragments ---------------------------------------------------------
 
 const casualtySql = Prisma.sql`COALESCE(NULLIF(payload #>> '{metadata,totalCasualties}', '')::numeric, 0)`;
 
 function casualtySqlOn(alias: string): Prisma.Sql {
   return Prisma.sql`COALESCE(NULLIF(${Prisma.raw(`${alias}.payload`)} #>> '{metadata,totalCasualties}', '')::numeric, 0)`;
 }
+
+// ---- Sort helper -----------------------------------------------------------
+
+function orderByFor(
+  sort: IncidentSort | undefined,
+): Prisma.RawRecordOrderByWithRelationInput[] | null {
+  switch (sort) {
+    case "date_asc":
+      return [
+        { eventDate: { sort: "asc", nulls: "last" } },
+        { sourceLocator: "asc" },
+      ];
+    case "casualties_desc":
+    case "casualties_asc":
+      return null; // handled by raw SQL path
+    case "date_desc":
+    default:
+      return [
+        { eventDate: { sort: "desc", nulls: "last" } },
+        { sourceLocator: "asc" },
+      ];
+  }
+}
+
+// ---- Date helpers ----------------------------------------------------------
+
+function asUtcDay(value: string): Date {
+  return new Date(`${value}T00:00:00.000Z`);
+}
+
+function asUtcDayEnd(value: string): Date {
+  return new Date(`${value}T23:59:59.999Z`);
+}
+
+// ---- Casualty where-clause translator --------------------------------------
+
+/**
+ * Translates the subset of Prisma.RawRecordWhereInput the DTO produces into a
+ * Prisma.Sql fragment usable by raw queries (needed for casualty sorting and
+ * for the casualty range filter).
+ *
+ * IMPORTANT: if you add a new filter to ListIncidentsQueryDto and buildWhere(),
+ * you must add a matching clause here or casualty-sorted requests will silently
+ * ignore it.
+ */
+function casualtyWhereClause(where: Prisma.RawRecordWhereInput): Prisma.Sql {
+  const parts: Prisma.Sql[] = [];
+
+  const clauses: Prisma.RawRecordWhereInput[] = Array.isArray(where.AND)
+    ? (where.AND as Prisma.RawRecordWhereInput[])
+    : where.AND
+      ? [where.AND as Prisma.RawRecordWhereInput]
+      : [where];
+
+  for (const clause of clauses) {
+    const c = clause as Record<string, unknown>;
+
+    if (typeof c.vitalStatus === "string") {
+      parts.push(Prisma.sql`"vitalStatus" = ${c.vitalStatus}::"VitalStatus"`);
+    }
+
+    if (c.location && typeof c.location === "object") {
+      const loc = c.location as { contains?: string };
+      if (loc.contains) {
+        parts.push(Prisma.sql`location ILIKE ${`%${loc.contains}%`}`);
+      }
+    }
+
+    if (c.payload && typeof c.payload === "object") {
+      const p = c.payload as { path?: string[]; string_contains?: string };
+      if (p.path && p.string_contains) {
+        const pathExpr = Prisma.raw(`'{${p.path.join(",")}}'`);
+        parts.push(
+          Prisma.sql`payload #>> ${pathExpr} ILIKE ${`%${p.string_contains}%`}`,
+        );
+      }
+    }
+
+    if (c.eventDate && typeof c.eventDate === "object") {
+      const ed = c.eventDate as { gte?: Date; lt?: Date; lte?: Date };
+      if (ed.gte) parts.push(Prisma.sql`"eventDate" >= ${ed.gte}`);
+      if (ed.lt) parts.push(Prisma.sql`"eventDate" < ${ed.lt}`);
+      if (ed.lte) parts.push(Prisma.sql`"eventDate" <= ${ed.lte}`);
+    }
+
+    if (c.organization && typeof c.organization === "object") {
+      const org = c.organization as { name?: { contains?: string } };
+      if (org.name?.contains) {
+        parts.push(Prisma.sql`EXISTS (
+          SELECT 1 FROM organizations o
+          WHERE o.id = raw_records."organizationId"
+            AND o.name ILIKE ${`%${org.name.contains}%`}
+        )`);
+      }
+    }
+
+    // Casualty range marker set by buildWhere().
+    if (typeof c.__casualtyMin === "number") {
+      parts.push(
+        Prisma.sql`COALESCE(NULLIF(payload #>> '{metadata,totalCasualties}', '')::numeric, 0) >= ${c.__casualtyMin}`,
+      );
+    }
+    if (typeof c.__casualtyMax === "number") {
+      parts.push(
+        Prisma.sql`COALESCE(NULLIF(payload #>> '{metadata,totalCasualties}', '')::numeric, 0) <= ${c.__casualtyMax}`,
+      );
+    }
+
+    // Evidence filters.
+    if (c.evidence && typeof c.evidence === "object") {
+      const ev = c.evidence as {
+        some?: { type?: EvidenceType };
+        none?: Record<string, never>;
+      };
+      if (ev.some !== undefined) {
+        if (ev.some?.type) {
+          parts.push(Prisma.sql`EXISTS (
+            SELECT 1 FROM incident_evidence e
+            WHERE e."incidentId" = raw_records.id
+              AND e.type = ${ev.some.type}::"EvidenceType"
+          )`);
+        } else {
+          parts.push(Prisma.sql`EXISTS (
+            SELECT 1 FROM incident_evidence e
+            WHERE e."incidentId" = raw_records.id
+          )`);
+        }
+      }
+      if (ev.none !== undefined) {
+        parts.push(Prisma.sql`NOT EXISTS (
+          SELECT 1 FROM incident_evidence e
+          WHERE e."incidentId" = raw_records.id
+        )`);
+      }
+    }
+
+    // OR groups from the search filter.
+    if (Array.isArray(c.OR)) {
+      const orParts: Prisma.Sql[] = [];
+      for (const orClause of c.OR as Record<string, unknown>[]) {
+        if (orClause.location && typeof orClause.location === "object") {
+          const loc = orClause.location as { contains?: string };
+          if (loc.contains) {
+            orParts.push(Prisma.sql`location ILIKE ${`%${loc.contains}%`}`);
+          }
+        }
+        if (
+          orClause.extractedName &&
+          typeof orClause.extractedName === "object"
+        ) {
+          const n = orClause.extractedName as { contains?: string };
+          if (n.contains) {
+            orParts.push(
+              Prisma.sql`"extractedName" ILIKE ${`%${n.contains}%`}`,
+            );
+          }
+        }
+        if (orClause.payload && typeof orClause.payload === "object") {
+          const p = orClause.payload as {
+            path?: string[];
+            string_contains?: string;
+          };
+          if (p.path && p.string_contains) {
+            const pathExpr = Prisma.raw(`'{${p.path.join(",")}}'`);
+            orParts.push(
+              Prisma.sql`payload #>> ${pathExpr} ILIKE ${`%${p.string_contains}%`}`,
+            );
+          }
+        }
+      }
+      if (orParts.length > 0) {
+        parts.push(Prisma.sql`(${Prisma.join(orParts, " OR ")})`);
+      }
+    }
+  }
+
+  return parts.length > 0
+    ? Prisma.sql`(${Prisma.join(parts, " AND ")})`
+    : Prisma.sql`TRUE`;
+}
+
+// ---- Payload readers -------------------------------------------------------
 
 type IncidentMetadata = {
   date: string | null;
@@ -408,17 +829,19 @@ function readMetadata(payload: Prisma.JsonValue): IncidentMetadata {
   const metadata = asObject(root?.metadata);
   const casualties = metadata?.totalCasualties;
   return {
-    date: typeof root?.date === 'string' ? root.date : null,
-    route: typeof metadata?.route === 'string' ? metadata.route : null,
-    causeOfDeath: typeof metadata?.causeOfDeath === 'string' ? metadata.causeOfDeath : null,
-    totalCasualties: typeof casualties === 'number' ? casualties : null,
-    sourceUrl: typeof metadata?.sourceUrl === 'string' ? metadata.sourceUrl : null,
+    date: typeof root?.date === "string" ? root.date : null,
+    route: typeof metadata?.route === "string" ? metadata.route : null,
+    causeOfDeath:
+      typeof metadata?.causeOfDeath === "string" ? metadata.causeOfDeath : null,
+    totalCasualties: typeof casualties === "number" ? casualties : null,
+    sourceUrl:
+      typeof metadata?.sourceUrl === "string" ? metadata.sourceUrl : null,
   };
 }
 
 function readCoordinatesText(payload: Prisma.JsonValue): string | null {
   const root = asObject(payload);
-  return typeof root?.coordinates === 'string' ? root.coordinates : null;
+  return typeof root?.coordinates === "string" ? root.coordinates : null;
 }
 
 type ClaimNumbers = {
@@ -430,7 +853,12 @@ type ClaimNumbers = {
 };
 
 function contradict(claims: ClaimNumbers[]) {
-  const fields = ['reportedDead', 'reportedMissing', 'reportedSurvivors', 'reportedDate'] as const;
+  const fields = [
+    "reportedDead",
+    "reportedMissing",
+    "reportedSurvivors",
+    "reportedDate",
+  ] as const;
   const disagreements = fields.flatMap((field) => {
     const present = claims.filter((claim) => claim[field] != null);
     const distinct = new Set(present.map((claim) => String(claim[field])));
@@ -451,9 +879,14 @@ function contradict(claims: ClaimNumbers[]) {
   return { detected: disagreements.length > 0, disagreements };
 }
 
-function fileSummary(metadata: IncidentMetadata, location: string | null): string {
-  const parts = [metadata.causeOfDeath, location].filter((part): part is string => Boolean(part));
-  return parts.join(' — ') || 'Reported in the source file';
+function fileSummary(
+  metadata: IncidentMetadata,
+  location: string | null,
+): string {
+  const parts = [metadata.causeOfDeath, location].filter(
+    (part): part is string => Boolean(part),
+  );
+  return parts.join(" — ") || "Reported in the source file";
 }
 
 type SourceClaimRecord = {
@@ -474,30 +907,44 @@ type SourceClaimRecord = {
 function claimFromRecord(record: SourceClaimRecord) {
   const metadata = readMetadata(record.payload);
   const sourceRow = readSourceRow(record.payload);
-  const notes = readText(sourceRow, ['notes']);
-  const summary = [fileSummary(metadata, record.location), notes && notes !== metadata.causeOfDeath ? notes : null]
+  const notes = readText(sourceRow, ["notes"]);
+  const summary = [
+    fileSummary(metadata, record.location),
+    notes && notes !== metadata.causeOfDeath ? notes : null,
+  ]
     .filter((part): part is string => Boolean(part))
-    .join('\n');
+    .join("\n");
   return {
     id: record.id,
     fromSourceFile: true,
     organization: record.organization,
-    reportedDead: readCount(sourceRow, ['number of dead', 'total dead', 'fatalities']),
-    reportedMissing: readCount(sourceRow, [
-      'minimum estimated number of missing',
-      'number of missing',
-      'total missing',
+    reportedDead: readCount(sourceRow, [
+      "number of dead",
+      "total dead",
+      "fatalities",
     ]),
-    reportedSurvivors: readCount(sourceRow, ['number of survivors', 'total survivors']),
-    reportedDate: record.eventDate ? record.eventDate.toISOString().slice(0, 10) : metadata.date,
-    summary: summary || 'Reported in the source file',
-    sourceUrl: metadata.sourceUrl ?? readText(sourceRow, ['url', 'source_url']),
+    reportedMissing: readCount(sourceRow, [
+      "minimum estimated number of missing",
+      "number of missing",
+      "total missing",
+    ]),
+    reportedSurvivors: readCount(sourceRow, [
+      "number of survivors",
+      "total survivors",
+    ]),
+    reportedDate: record.eventDate
+      ? record.eventDate.toISOString().slice(0, 10)
+      : metadata.date,
+    summary: summary || "Reported in the source file",
+    sourceUrl: metadata.sourceUrl ?? readText(sourceRow, ["url", "source_url"]),
     sourceQuality: record.organization.reliabilityScore,
     createdAt: record.ingestedAt,
   };
 }
 
-function dedupeClaims<T extends ClaimNumbers & { summary: string; sourceUrl: string | null }>(claims: T[]): T[] {
+function dedupeClaims<
+  T extends ClaimNumbers & { summary: string; sourceUrl: string | null },
+>(claims: T[]): T[] {
   const seen = new Set<string>();
   const unique: T[] = [];
   for (const claim of claims) {
@@ -509,7 +956,7 @@ function dedupeClaims<T extends ClaimNumbers & { summary: string; sourceUrl: str
       claim.reportedDate,
       claim.summary,
       claim.sourceUrl,
-    ].join('|');
+    ].join("|");
     if (seen.has(key)) continue;
     seen.add(key);
     unique.push(claim);
@@ -517,7 +964,10 @@ function dedupeClaims<T extends ClaimNumbers & { summary: string; sourceUrl: str
   return unique;
 }
 
-function readText(row: Record<string, unknown> | null, names: string[]): string | null {
+function readText(
+  row: Record<string, unknown> | null,
+  names: string[],
+): string | null {
   if (!row) return null;
   const indexed = new Map<string, unknown>();
   for (const [key, value] of Object.entries(row)) {
@@ -525,18 +975,24 @@ function readText(row: Record<string, unknown> | null, names: string[]): string 
   }
   for (const name of names) {
     const value = indexed.get(name);
-    if (typeof value === 'string' && value.trim()) return value.trim();
-    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value))
+      return String(value);
   }
   return null;
 }
 
-function readSourceRow(payload: Prisma.JsonValue): Record<string, unknown> | null {
+function readSourceRow(
+  payload: Prisma.JsonValue,
+): Record<string, unknown> | null {
   const root = asObject(payload);
   return asObject(root?.sourceRow);
 }
 
-function readCount(row: Record<string, unknown> | null, names: string[]): number | null {
+function readCount(
+  row: Record<string, unknown> | null,
+  names: string[],
+): number | null {
   if (!row) {
     return null;
   }
@@ -547,10 +1003,10 @@ function readCount(row: Record<string, unknown> | null, names: string[]): number
   for (const name of names) {
     const value = indexed.get(name);
     const parsed =
-      typeof value === 'number'
+      typeof value === "number"
         ? value
-        : typeof value === 'string' && value.trim()
-          ? Number(value.replace(/,/g, '').trim())
+        : typeof value === "string" && value.trim()
+          ? Number(value.replace(/,/g, "").trim())
           : Number.NaN;
     if (Number.isFinite(parsed) && parsed >= 0) {
       return Math.trunc(parsed);
@@ -560,7 +1016,7 @@ function readCount(row: Record<string, unknown> | null, names: string[]): number
 }
 
 function asObject(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
   return value as Record<string, unknown>;

@@ -45,6 +45,16 @@ export class IncidentsController {
     return this.incidentsService.stats();
   }
 
+  @Get("facets")
+  @ApiOperation({
+    summary: "Distinct values for incident filters",
+    description:
+      "Returns the set of distinct routes, causes, statuses, years, and source organizations present in the data, with counts. Use these values to populate filter dropdowns.",
+  })
+  facets() {
+    return this.incidentsService.facets();
+  }
+
   @Get()
   @ApiOperation({
     summary: "List ingested Syrian incidents",

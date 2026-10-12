@@ -1,0 +1,63 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Case Summary</title>
+    <style>
+      @page { size: A4 landscape; margin: 14mm; }
+      * { box-sizing: border-box; }
+      body { font-family: "Segoe UI", Tahoma, sans-serif; color: #1a1a1a; font-size: 9pt; margin: 0; }
+      h1 { font-size: 18pt; margin: 0 0 4px; }
+      .meta { color: #666; font-size: 9pt; margin-bottom: 14px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 6px 7px; border-bottom: 1px solid #ddd; vertical-align: top; }
+      th { background: #f1f3f2; font-size: 8pt; text-transform: uppercase; }
+      tr { page-break-inside: avoid; }
+      .case-id { display: block; color: #777; font-size: 7pt; margin-top: 2px; }
+      .badge { display: inline-block; padding: 2px 5px; border-radius: 3px; font-weight: 600; white-space: nowrap; }
+      .alive { background: #d4f4dd; color: #155724; }
+      .deceased { background: #f8d7da; color: #721c24; }
+      .missing { background: #fff3cd; color: #856404; }
+      .detained { background: #d1ecf1; color: #0c5460; }
+      .unknown { background: #e2e3e5; color: #383d41; }
+      .conflict { color: #9b2c2c; font-weight: 600; }
+      .muted { color: #888; }
+      .empty { text-align: center; padding: 28px; color: #666; }
+    </style>
+  </head>
+  <body>
+    <h1>Case Summary</h1>
+    <div class="meta">{{total}} cases · Generated {{generatedAt}}</div>
+    {{#if profiles.length}}
+      <table>
+        <thead>
+          <tr>
+            <th>Case</th>
+            <th>Status</th>
+            <th>Location</th>
+            <th>Birth year</th>
+            <th>Source records</th>
+            <th>Organizations</th>
+            <th>Avg. confidence</th>
+            <th>Review</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each profiles}}
+            <tr>
+              <td>{{#if canonicalName}}{{canonicalName}}{{else}}Unidentified case{{/if}}<span class="case-id">{{id}}</span></td>
+              <td><span class="badge {{statusClass resolvedStatus}}">{{resolvedStatus}}</span></td>
+              <td>{{#if resolvedLocation}}{{resolvedLocation}}{{else}}<span class="muted">Unknown</span>{{/if}}</td>
+              <td>{{#if resolvedBirthYear}}{{resolvedBirthYear}}{{else}}—{{/if}}</td>
+              <td>{{linkedSourceCount}}</td>
+              <td>{{linkedOrganizationCount}}</td>
+              <td>{{#if (hasValue confidenceAverage)}}{{formatConfidence confidenceAverage}}{{else}}—{{/if}}</td>
+              <td>{{#if hasConflict}}<span class="conflict">Conflict</span>{{else}}—{{/if}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    {{else}}
+      <div class="empty">No cases match the selected filters.</div>
+    {{/if}}
+  </body>
+</html>

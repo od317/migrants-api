@@ -1,9 +1,17 @@
 import Handlebars from "handlebars";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { ProfileDetail } from "../profiles/profiles.service";
+import type {
+  ProfileDetail,
+  ProfileSummary,
+} from "../profiles/profiles.service";
 
 const TEMPLATE_PATH = join(__dirname, "templates", "case.hbs");
+const SUMMARY_TEMPLATE_PATH = join(
+  __dirname,
+  "templates",
+  "profiles-summary.hbs",
+);
 
 // ---- Arabic translation tables --------------------------------------------
 
@@ -76,9 +84,14 @@ function translateStatus(value: unknown): string {
   return STATUS_LABELS_AR[key] ?? key;
 }
 
+function hasValue(value: unknown): boolean {
+  return value !== null && value !== undefined;
+}
+
 // ---- Compilation cache -----------------------------------------------------
 
 let compiled: HandlebarsTemplateDelegate | null = null;
+let compiledSummary: HandlebarsTemplateDelegate | null = null;
 
 async function getTemplate(): Promise<HandlebarsTemplateDelegate> {
   if (compiled) return compiled;
@@ -91,6 +104,16 @@ async function getTemplate(): Promise<HandlebarsTemplateDelegate> {
   const source = await readFile(TEMPLATE_PATH, "utf8");
   compiled = Handlebars.compile(source, { noEscape: false });
   return compiled;
+}
+
+async function getSummaryTemplate(): Promise<HandlebarsTemplateDelegate> {
+  if (compiledSummary) return compiledSummary;
+  Handlebars.registerHelper("statusClass", statusClass);
+  Handlebars.registerHelper("formatConfidence", formatConfidence);
+  Handlebars.registerHelper("hasValue", hasValue);
+  const source = await readFile(SUMMARY_TEMPLATE_PATH, "utf8");
+  compiledSummary = Handlebars.compile(source, { noEscape: false });
+  return compiledSummary;
 }
 
 export type CaseTemplateData = {
@@ -122,4 +145,14 @@ export async function buildCaseHtml(profile: ProfileDetail): Promise<string> {
   };
 
   return template(data);
+}
+
+export async function buildProfilesSummaryHtml(
+  profiles: ProfileSummary[],
+): Promise<string> {
+  const template = await getSummaryTemplate();
+  const now = new Date();
+  const generatedAt = `${now.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+
+  return template({ profiles, generatedAt, total: profiles.length });
 }
