@@ -57,9 +57,9 @@ export class IncidentsController {
 
   @Get("pdf")
   @ApiOperation({
-    summary: "Download a PDF summary of all incidents",
+    summary: "Download a PDF reference of incidents from 2011 onward",
     description:
-      "Renders every stored incident as a single summary PDF, across all incident statuses.",
+      "Renders incidents dated 2011 or later as a single reference PDF, across all incident statuses. Rows are ordered from the earliest date.",
   })
   @ApiProduces("application/pdf")
   async downloadAllPdf(@Res() response: Response): Promise<void> {

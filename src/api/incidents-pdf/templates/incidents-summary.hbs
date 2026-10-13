@@ -1,12 +1,15 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <title>ملخص جميع الحوادث</title>
+    <title>مرجع المفقودين السوريين عبر الهجرة</title>
     <style>
       @page { size: A4 landscape; margin: 13mm; }
       * { box-sizing: border-box; }
       body { font-family: "Noto Naskh Arabic", "Amiri", "Segoe UI", Tahoma, sans-serif; color: #1a1a1a; font-size: 9pt; line-height: 1.5; margin: 0; direction: rtl; }
-      h1 { font-size: 18pt; margin: 0 0 4px; }
+      h1 { font-size: 18pt; margin: 0 0 8px; }
+      .totals { margin: 0 0 8px; }
+      .total-value { font-size: 16pt; font-weight: 700; line-height: 1.2; }
+      .total-label { color: #444; font-size: 9pt; }
       .meta { color: #666; font-size: 9pt; margin-bottom: 14px; }
       table { width: 100%; border-collapse: collapse; }
       thead { display: table-header-group; }
@@ -15,6 +18,7 @@
       tr { page-break-inside: avoid; }
       .id { display: block; direction: ltr; text-align: right; color: #777; font-size: 7pt; margin-top: 2px; }
       .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-weight: 600; white-space: nowrap; }
+      .badge.compact { font-size: 6.5pt; padding: 1px 4px; font-weight: 600; }
       .alive { background: #d4f4dd; color: #155724; }
       .deceased, .fatality { background: #f8d7da; color: #721c24; }
       .missing { background: #fff3cd; color: #856404; }
@@ -26,8 +30,12 @@
     </style>
   </head>
   <body>
-    <h1>ملخص جميع الحوادث</h1>
-    <div class="meta">عدد الحوادث: {{total}} · تاريخ الإنشاء: {{generatedAt}}</div>
+    <h1>مرجع المفقودين السوريين عبر الهجرة</h1>
+    <div class="totals">
+      <div class="total-value">{{totalCasualties}}</div>
+      <div class="total-label">إجمالي الضحايا</div>
+    </div>
+    <div class="meta">عدد الحوادث: {{total}} · من عام 2011 · تاريخ الإنشاء: {{generatedAt}}</div>
     {{#if incidents.length}}
       <table>
         <thead>
@@ -37,7 +45,7 @@
             <th>الحالة</th>
             <th>المسار</th>
             <th>السبب</th>
-            <th>إجمالي الضحايا</th>
+            <th>عدد الضحايا</th>
             <th>المنظمة المصدر</th>
           </tr>
         </thead>
@@ -46,7 +54,7 @@
             <tr>
               <td>{{#if date}}{{formatDate date}}{{else}}غير معروف{{/if}}<span class="id">{{#if sourceRecordId}}{{sourceRecordId}}{{else}}{{id}}{{/if}}</span></td>
               <td>{{#if location}}{{location}}{{else}}<span class="muted">غير معروف</span>{{/if}}</td>
-              <td><span class="badge {{statusClass status}}">{{translateStatus status}}</span></td>
+              <td><span class="badge {{summaryStatusClass status}}">{{translateStatus status}}</span></td>
               <td>{{#if route}}{{route}}{{else}}—{{/if}}</td>
               <td>{{#if causeOfDeath}}{{causeOfDeath}}{{else}}—{{/if}}</td>
               <td>{{#if (hasValue totalCasualties)}}{{totalCasualties}}{{else}}—{{/if}}</td>

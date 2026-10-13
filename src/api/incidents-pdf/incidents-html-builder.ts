@@ -176,6 +176,12 @@ function hasValue(value: unknown): boolean {
   return value !== null && value !== undefined;
 }
 
+function summaryStatusClass(status: unknown): string {
+  const key = String(status ?? "");
+  const base = statusClass(key);
+  return key === "DECEASED_OR_MISSING" ? `${base} compact` : base;
+}
+
 // ---- Compilation cache -----------------------------------------------------
 
 let compiled: HandlebarsTemplateDelegate | null = null;
@@ -200,6 +206,7 @@ async function getSummaryTemplate(): Promise<HandlebarsTemplateDelegate> {
   if (compiledSummary) return compiledSummary;
 
   Handlebars.registerHelper("statusClass", statusClass);
+  Handlebars.registerHelper("summaryStatusClass", summaryStatusClass);
   Handlebars.registerHelper("formatDate", formatDate);
   Handlebars.registerHelper("translateStatus", translateStatus);
   Handlebars.registerHelper("hasValue", hasValue);
@@ -257,9 +264,15 @@ export async function buildIncidentsSummaryHtml(
   const hours = String(now.getUTCHours()).padStart(2, "0");
   const minutes = String(now.getUTCMinutes()).padStart(2, "0");
 
+  const totalCasualties = incidents.reduce(
+    (sum, incident) => sum + (incident.totalCasualties ?? 0),
+    0,
+  );
+
   return template({
     incidents,
     total: incidents.length,
+    totalCasualties,
     generatedAt: `${day} ${month} ${year} - ${hours}:${minutes} بتوقيت UTC`,
   });
 }
