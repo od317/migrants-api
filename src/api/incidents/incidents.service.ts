@@ -69,6 +69,8 @@ export type IncidentItem = {
   route: string | null;
   causeOfDeath: string | null;
   totalCasualties: number | null;
+  peopleCount: number | null;
+  sourceName: string;
   sourceUrl: string | null;
   sourceOrg: {
     id: string;
@@ -553,6 +555,8 @@ export class IncidentsService {
           route: metadata.route,
           causeOfDeath: metadata.causeOfDeath,
           totalCasualties: metadata.totalCasualties,
+          peopleCount: readPeopleCount(record.payload, metadata.totalCasualties),
+          sourceName: readSourceName(record.payload, record.organization.name),
           sourceUrl: metadata.sourceUrl,
           sourceOrg: record.organization,
         };
@@ -1010,6 +1014,44 @@ function readText(
       return String(value);
   }
   return null;
+}
+
+function readPeopleCount(
+  payload: Prisma.JsonValue,
+  totalCasualties: number | null,
+): number | null {
+  if (totalCasualties != null) return totalCasualties;
+
+  const metadata = asObject(asObject(payload)?.metadata);
+  const fatalities = metadata?.fatalities;
+  if (typeof fatalities === "number" && Number.isFinite(fatalities) && fatalities >= 0) {
+    return Math.trunc(fatalities);
+  }
+
+  const sourceRow = readSourceRow(payload);
+  const reportedTotal = readCount(sourceRow, [
+    "total number of dead and missing",
+    "number of dead and missing",
+    "fatalities",
+  ]);
+  if (reportedTotal != null) return reportedTotal;
+
+  const dead = readCount(sourceRow, ["number of dead", "total dead", "fatalities"]);
+  const missing = readCount(sourceRow, [
+    "minimum estimated number of missing",
+    "number of missing",
+    "total missing",
+  ]);
+  if (dead == null && missing == null) return null;
+  return (dead ?? 0) + (missing ?? 0);
+}
+
+function readSourceName(payload: Prisma.JsonValue, organizationName: string): string {
+  const reported = readText(readSourceRow(payload), [
+    "information source",
+    "source",
+  ]);
+  return reported ?? organizationName;
 }
 
 function readSourceRow(

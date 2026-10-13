@@ -265,7 +265,7 @@ export async function buildIncidentsSummaryHtml(
   const minutes = String(now.getUTCMinutes()).padStart(2, "0");
 
   const totalCasualties = incidents.reduce(
-    (sum, incident) => sum + (incident.totalCasualties ?? 0),
+    (sum, incident) => sum + (incident.peopleCount ?? incident.totalCasualties ?? 0),
     0,
   );
 
