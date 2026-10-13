@@ -1058,11 +1058,28 @@ function readPeopleCount(
 }
 
 function readSourceName(payload: Prisma.JsonValue, organizationName: string): string {
-  const reported = readText(readSourceRow(payload), [
+  const sourceRow = readSourceRow(payload);
+  const reported = readText(sourceRow, [
     "information source",
+    "info source",
     "source",
+    "source name",
   ]);
-  return reported ?? organizationName;
+  if (reported) return reported;
+  if (sourceRow) {
+    for (const [key, value] of Object.entries(sourceRow)) {
+      const folded = foldKey(key);
+      if (
+        !folded.includes("source") ||
+        folded.includes("quality") ||
+        folded.includes("url")
+      ) {
+        continue;
+      }
+      if (typeof value === "string" && value.trim()) return value.trim();
+    }
+  }
+  return organizationName;
 }
 
 function readSourceRow(

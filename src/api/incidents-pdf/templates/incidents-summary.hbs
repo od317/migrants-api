@@ -16,13 +16,13 @@
       th, td { text-align: right; padding: 5px 6px; border-bottom: 1px solid #ddd; vertical-align: top; overflow-wrap: anywhere; }
       th { background: #f1f3f2; font-size: 8pt; }
       tr { page-break-inside: avoid; }
-      .col-date { width: 15%; }
-      .col-location { width: 14%; }
-      .col-status { width: 12%; }
-      .col-route { width: 12%; }
-      .col-cause { width: 14%; }
-      .col-count { width: 9%; }
+      .col-date { width: 14%; }
+      .col-count { width: 8%; }
       .col-source { width: 24%; }
+      .col-location { width: 16%; }
+      .col-status { width: 11%; }
+      .col-route { width: 13%; }
+      .col-cause { width: 14%; }
       .count { font-weight: 700; }
       .source { font-size: 8pt; }
       .url, .file { display: block; margin-top: 2px; color: #555; font-size: 7pt; }
@@ -52,28 +52,28 @@
         <thead>
           <tr>
             <th class="col-date">التاريخ ورقم السجل</th>
+            <th class="col-count">عدد الضحايا</th>
+            <th class="col-source">مصدر المعلومة</th>
             <th class="col-location">الموقع</th>
             <th class="col-status">الحالة</th>
             <th class="col-route">المسار</th>
             <th class="col-cause">السبب</th>
-            <th class="col-count">عدد الضحايا</th>
-            <th class="col-source">مصدر المعلومة</th>
           </tr>
         </thead>
         <tbody>
           {{#each incidents}}
             <tr>
               <td>{{#if date}}{{formatDate date}}{{else}}غير معروف{{/if}}<span class="id">{{#if sourceRecordId}}{{sourceRecordId}}{{else}}{{id}}{{/if}}</span></td>
-              <td>{{#if location}}{{location}}{{else}}<span class="muted">غير معروف</span>{{/if}}</td>
-              <td><span class="badge {{summaryStatusClass status}}">{{translateStatus status}}</span></td>
-              <td>{{#if route}}{{route}}{{else}}—{{/if}}</td>
-              <td>{{#if causeOfDeath}}{{causeOfDeath}}{{else}}—{{/if}}</td>
               <td class="count">{{#if (hasValue peopleCount)}}{{peopleCount}}{{else}}—{{/if}}</td>
               <td class="source">
                 <div>{{#if sourceName}}{{sourceName}}{{else}}<span class="muted">غير معروف</span>{{/if}}</div>
                 {{#if sourceUrl}}<div class="url">{{sourceUrl}}</div>{{/if}}
                 {{#if sourceFileName}}<div class="file">{{sourceFileName}}</div>{{/if}}
               </td>
+              <td>{{#if location}}{{location}}{{else}}<span class="muted">غير معروف</span>{{/if}}</td>
+              <td><span class="badge {{summaryStatusClass status}}">{{translateStatus status}}</span></td>
+              <td>{{#if route}}{{route}}{{else}}—{{/if}}</td>
+              <td>{{#if causeOfDeath}}{{causeOfDeath}}{{else}}—{{/if}}</td>
             </tr>
           {{/each}}
         </tbody>

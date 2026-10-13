@@ -131,6 +131,7 @@ export class IncidentsPdfService implements OnModuleInit, OnModuleDestroy {
       const pdf = await page.pdf({
         format: "A4",
         landscape,
+        preferCSSPageSize: landscape,
         printBackground: true,
       });
       return Buffer.from(pdf);
