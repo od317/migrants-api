@@ -9,6 +9,7 @@ import puppeteer, { type Browser } from "puppeteer";
 import { IncidentsService } from "../incidents/incidents.service";
 import {
   buildIncidentHtml,
+  buildIncidentsSummaryHtml,
   type IncidentDossier,
 } from "./incidents-html-builder";
 
@@ -92,6 +93,18 @@ export class IncidentsPdfService implements OnModuleInit, OnModuleDestroy {
       buffer,
       filename: this.filenameFor(incident),
       asciiFallback: `incident-${incident.id.slice(0, 8)}.pdf`,
+    };
+  }
+
+  async renderAll(): Promise<RenderedIncidentPdf> {
+    const incidents = await this.incidents.listAll();
+    const html = await buildIncidentsSummaryHtml(incidents);
+    const buffer = await this.renderPdf(html);
+    const date = new Date().toISOString().slice(0, 10);
+    return {
+      buffer,
+      filename: `incidents-summary-${date}.pdf`,
+      asciiFallback: `incidents-summary-${date}.pdf`,
     };
   }
 

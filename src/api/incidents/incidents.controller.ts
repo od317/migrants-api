@@ -55,6 +55,27 @@ export class IncidentsController {
     return this.incidentsService.facets();
   }
 
+  @Get("pdf")
+  @ApiOperation({
+    summary: "Download a PDF summary of all incidents",
+    description:
+      "Renders every stored incident as a single summary PDF, across all incident statuses.",
+  })
+  @ApiProduces("application/pdf")
+  async downloadAllPdf(@Res() response: Response): Promise<void> {
+    const { buffer, filename, asciiFallback } =
+      await this.incidentsPdf.renderAll();
+
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    );
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader("Content-Length", buffer.length.toString());
+    response.setHeader("Cache-Control", "private, max-age=0, must-revalidate");
+    response.end(buffer);
+  }
+
   @Get()
   @ApiOperation({
     summary: "List ingested Syrian incidents",

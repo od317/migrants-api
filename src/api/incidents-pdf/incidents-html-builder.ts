@@ -1,6 +1,7 @@
 import Handlebars from "handlebars";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { IncidentItem } from "../incidents/incidents.service";
 
 /**
  * Shape of what IncidentsService.findOne() returns.
@@ -70,6 +71,11 @@ export type IncidentDossier = {
 };
 
 const TEMPLATE_PATH = join(__dirname, "templates", "incident.hbs");
+const SUMMARY_TEMPLATE_PATH = join(
+  __dirname,
+  "templates",
+  "incidents-summary.hbs",
+);
 
 // ---- Arabic translation tables --------------------------------------------
 
@@ -166,9 +172,14 @@ function translateField(value: unknown): string {
   return FIELD_LABELS_AR[key] ?? key;
 }
 
+function hasValue(value: unknown): boolean {
+  return value !== null && value !== undefined;
+}
+
 // ---- Compilation cache -----------------------------------------------------
 
 let compiled: HandlebarsTemplateDelegate | null = null;
+let compiledSummary: HandlebarsTemplateDelegate | null = null;
 
 async function getTemplate(): Promise<HandlebarsTemplateDelegate> {
   if (compiled) return compiled;
@@ -183,6 +194,19 @@ async function getTemplate(): Promise<HandlebarsTemplateDelegate> {
   const source = await readFile(TEMPLATE_PATH, "utf8");
   compiled = Handlebars.compile(source, { noEscape: false });
   return compiled;
+}
+
+async function getSummaryTemplate(): Promise<HandlebarsTemplateDelegate> {
+  if (compiledSummary) return compiledSummary;
+
+  Handlebars.registerHelper("statusClass", statusClass);
+  Handlebars.registerHelper("formatDate", formatDate);
+  Handlebars.registerHelper("translateStatus", translateStatus);
+  Handlebars.registerHelper("hasValue", hasValue);
+
+  const source = await readFile(SUMMARY_TEMPLATE_PATH, "utf8");
+  compiledSummary = Handlebars.compile(source, { noEscape: false });
+  return compiledSummary;
 }
 
 // ---- Public builder --------------------------------------------------------
@@ -220,4 +244,22 @@ export async function buildIncidentHtml(
   };
 
   return template(data);
+}
+
+export async function buildIncidentsSummaryHtml(
+  incidents: IncidentItem[],
+): Promise<string> {
+  const template = await getSummaryTemplate();
+  const now = new Date();
+  const day = now.getUTCDate();
+  const month = ARABIC_MONTHS[now.getUTCMonth()];
+  const year = now.getUTCFullYear();
+  const hours = String(now.getUTCHours()).padStart(2, "0");
+  const minutes = String(now.getUTCMinutes()).padStart(2, "0");
+
+  return template({
+    incidents,
+    total: incidents.length,
+    generatedAt: `${day} ${month} ${year} - ${hours}:${minutes} بتوقيت UTC`,
+  });
 }

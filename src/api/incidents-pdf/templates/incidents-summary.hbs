@@ -1,0 +1,62 @@
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>ملخص جميع الحوادث</title>
+    <style>
+      @page { size: A4 landscape; margin: 13mm; }
+      * { box-sizing: border-box; }
+      body { font-family: "Noto Naskh Arabic", "Amiri", "Segoe UI", Tahoma, sans-serif; color: #1a1a1a; font-size: 9pt; line-height: 1.5; margin: 0; direction: rtl; }
+      h1 { font-size: 18pt; margin: 0 0 4px; }
+      .meta { color: #666; font-size: 9pt; margin-bottom: 14px; }
+      table { width: 100%; border-collapse: collapse; }
+      thead { display: table-header-group; }
+      th, td { text-align: right; padding: 6px 7px; border-bottom: 1px solid #ddd; vertical-align: top; }
+      th { background: #f1f3f2; font-size: 8pt; }
+      tr { page-break-inside: avoid; }
+      .id { display: block; direction: ltr; text-align: right; color: #777; font-size: 7pt; margin-top: 2px; }
+      .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-weight: 600; white-space: nowrap; }
+      .alive { background: #d4f4dd; color: #155724; }
+      .deceased, .fatality { background: #f8d7da; color: #721c24; }
+      .missing { background: #fff3cd; color: #856404; }
+      .detained { background: #d1ecf1; color: #0c5460; }
+      .conflict { background: #fde2e4; color: #842029; }
+      .unknown { background: #e2e3e5; color: #383d41; }
+      .muted { color: #888; }
+      .empty { text-align: center; padding: 28px; color: #666; }
+    </style>
+  </head>
+  <body>
+    <h1>ملخص جميع الحوادث</h1>
+    <div class="meta">عدد الحوادث: {{total}} · تاريخ الإنشاء: {{generatedAt}}</div>
+    {{#if incidents.length}}
+      <table>
+        <thead>
+          <tr>
+            <th>التاريخ ورقم السجل</th>
+            <th>الموقع</th>
+            <th>الحالة</th>
+            <th>المسار</th>
+            <th>السبب</th>
+            <th>إجمالي الضحايا</th>
+            <th>المنظمة المصدر</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each incidents}}
+            <tr>
+              <td>{{#if date}}{{formatDate date}}{{else}}غير معروف{{/if}}<span class="id">{{#if sourceRecordId}}{{sourceRecordId}}{{else}}{{id}}{{/if}}</span></td>
+              <td>{{#if location}}{{location}}{{else}}<span class="muted">غير معروف</span>{{/if}}</td>
+              <td><span class="badge {{statusClass status}}">{{translateStatus status}}</span></td>
+              <td>{{#if route}}{{route}}{{else}}—{{/if}}</td>
+              <td>{{#if causeOfDeath}}{{causeOfDeath}}{{else}}—{{/if}}</td>
+              <td>{{#if (hasValue totalCasualties)}}{{totalCasualties}}{{else}}—{{/if}}</td>
+              <td>{{sourceOrg.name}}{{#if sourceOrg.acronym}} ({{sourceOrg.acronym}}){{/if}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    {{else}}
+      <div class="empty">لا توجد حوادث مسجلة.</div>
+    {{/if}}
+  </body>
+</html>

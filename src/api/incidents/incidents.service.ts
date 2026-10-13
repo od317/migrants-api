@@ -112,9 +112,32 @@ export class IncidentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(query: ListIncidentsQueryDto): Promise<IncidentPage> {
+    return this.listPage(query, true);
+  }
+
+  async listAll(): Promise<IncidentItem[]> {
+    const incidents: IncidentItem[] = [];
+    let offset = 0;
+    let total = Number.POSITIVE_INFINITY;
+
+    while (offset < total) {
+      const page = await this.listPage({ limit: 100, offset }, false);
+      incidents.push(...page.data);
+      total = page.total;
+      if (page.data.length === 0) break;
+      offset += page.data.length;
+    }
+
+    return incidents;
+  }
+
+  private async listPage(
+    query: ListIncidentsQueryDto,
+    applyDefaultStatus: boolean,
+  ): Promise<IncidentPage> {
     const limit = query.limit ?? DEFAULT_LIMIT;
     const offset = query.offset ?? 0;
-    const where = this.buildWhere(query);
+    const where = this.buildWhere(query, applyDefaultStatus);
 
     // Casualty sorts need JSONB extraction that Prisma's query builder can't
     // express, so they take a raw-SQL path. Date sorts use the normal path.
@@ -537,10 +560,17 @@ export class IncidentsService {
     };
   }
 
-  private buildWhere(query: ListIncidentsQueryDto): Prisma.RawRecordWhereInput {
-    const filters: Prisma.RawRecordWhereInput[] = [
-      { vitalStatus: query.status ?? VitalStatus.DECEASED_OR_MISSING },
-    ];
+  private buildWhere(
+    query: ListIncidentsQueryDto,
+    applyDefaultStatus: boolean,
+  ): Prisma.RawRecordWhereInput {
+    const filters: Prisma.RawRecordWhereInput[] = [];
+
+    if (query.status) {
+      filters.push({ vitalStatus: query.status });
+    } else if (applyDefaultStatus) {
+      filters.push({ vitalStatus: VitalStatus.DECEASED_OR_MISSING });
+    }
 
     // Free text across location, name, and source-row notes.
     if (query.search) {
