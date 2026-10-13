@@ -72,6 +72,7 @@ export type IncidentItem = {
   peopleCount: number | null;
   sourceName: string;
   sourceUrl: string | null;
+  sourceFileName: string | null;
   sourceOrg: {
     id: string;
     name: string;
@@ -162,6 +163,7 @@ export class IncidentsService {
                 reliabilityScore: true,
               },
             },
+            sourceFile: { select: { originalFilename: true } },
           },
         }),
       ]);
@@ -206,6 +208,7 @@ export class IncidentsService {
             reliabilityScore: true,
           },
         },
+        sourceFile: { select: { originalFilename: true } },
       },
     });
     const byId = new Map(records.map((record) => [record.id, record]));
@@ -531,6 +534,7 @@ export class IncidentsService {
         acronym: string | null;
         reliabilityScore: number;
       };
+      sourceFile?: { originalFilename: string } | null;
     }>,
   ): IncidentPage {
     return {
@@ -540,6 +544,7 @@ export class IncidentsService {
       data: records.map((record) => {
         const metadata = readMetadata(record.payload);
         const coordinates = readCoordinatesText(record.payload);
+        const sourceRow = readSourceRow(record.payload);
         return {
           id: record.id,
           sourceRecordId: record.sourceLocator,
@@ -557,7 +562,10 @@ export class IncidentsService {
           totalCasualties: metadata.totalCasualties,
           peopleCount: readPeopleCount(record.payload, metadata.totalCasualties),
           sourceName: readSourceName(record.payload, record.organization.name),
-          sourceUrl: metadata.sourceUrl,
+          sourceUrl:
+            metadata.sourceUrl ??
+            readText(sourceRow, ["url", "source url", "source_url"]),
+          sourceFileName: record.sourceFile?.originalFilename ?? null,
           sourceOrg: record.organization,
         };
       }),
@@ -867,7 +875,7 @@ function readMetadata(payload: Prisma.JsonValue): IncidentMetadata {
     route: typeof metadata?.route === "string" ? metadata.route : null,
     causeOfDeath:
       typeof metadata?.causeOfDeath === "string" ? metadata.causeOfDeath : null,
-    totalCasualties: typeof casualties === "number" ? casualties : null,
+    totalCasualties: asCount(casualties),
     sourceUrl:
       typeof metadata?.sourceUrl === "string" ? metadata.sourceUrl : null,
   };
@@ -1003,12 +1011,9 @@ function readText(
   names: string[],
 ): string | null {
   if (!row) return null;
-  const indexed = new Map<string, unknown>();
-  for (const [key, value] of Object.entries(row)) {
-    indexed.set(key.trim().toLowerCase(), value);
-  }
+  const indexed = indexRow(row);
   for (const name of names) {
-    const value = indexed.get(name);
+    const value = indexed.get(foldKey(name));
     if (typeof value === "string" && value.trim()) return value.trim();
     if (typeof value === "number" && Number.isFinite(value))
       return String(value);
@@ -1023,23 +1028,29 @@ function readPeopleCount(
   if (totalCasualties != null) return totalCasualties;
 
   const metadata = asObject(asObject(payload)?.metadata);
-  const fatalities = metadata?.fatalities;
-  if (typeof fatalities === "number" && Number.isFinite(fatalities) && fatalities >= 0) {
-    return Math.trunc(fatalities);
-  }
+  const fromMetadata = asCount(metadata?.fatalities);
+  if (fromMetadata != null) return fromMetadata;
 
   const sourceRow = readSourceRow(payload);
   const reportedTotal = readCount(sourceRow, [
     "total number of dead and missing",
     "number of dead and missing",
+    "total dead and missing",
+    "total casualties",
+    "number of casualties",
     "fatalities",
   ]);
   if (reportedTotal != null) return reportedTotal;
 
-  const dead = readCount(sourceRow, ["number of dead", "total dead", "fatalities"]);
+  const dead = readCount(sourceRow, [
+    "number of dead",
+    "number dead",
+    "total dead",
+  ]);
   const missing = readCount(sourceRow, [
     "minimum estimated number of missing",
     "number of missing",
+    "number missing",
     "total missing",
   ]);
   if (dead == null && missing == null) return null;
@@ -1068,21 +1079,37 @@ function readCount(
   if (!row) {
     return null;
   }
+  const indexed = indexRow(row);
+  for (const name of names) {
+    const count = asCount(indexed.get(foldKey(name)));
+    if (count != null) return count;
+  }
+  return null;
+}
+
+function indexRow(row: Record<string, unknown>): Map<string, unknown> {
   const indexed = new Map<string, unknown>();
   for (const [key, value] of Object.entries(row)) {
-    indexed.set(key.trim().toLowerCase(), value);
+    indexed.set(foldKey(key), value);
   }
-  for (const name of names) {
-    const value = indexed.get(name);
-    const parsed =
-      typeof value === "number"
-        ? value
-        : typeof value === "string" && value.trim()
-          ? Number(value.replace(/,/g, "").trim())
-          : Number.NaN;
-    if (Number.isFinite(parsed) && parsed >= 0) {
-      return Math.trunc(parsed);
-    }
+  return indexed;
+}
+
+function foldKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function asCount(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return Math.trunc(value);
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value.replace(/,/g, "").trim());
+    if (Number.isFinite(parsed) && parsed >= 0) return Math.trunc(parsed);
   }
   return null;
 }

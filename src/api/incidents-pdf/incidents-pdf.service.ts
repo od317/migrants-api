@@ -114,7 +114,7 @@ export class IncidentsPdfService implements OnModuleInit, OnModuleDestroy {
         );
       });
     const html = await buildIncidentsSummaryHtml(incidents);
-    const buffer = await this.renderPdf(html);
+    const buffer = await this.renderPdf(html, true);
     const date = new Date().toISOString().slice(0, 10);
     return {
       buffer,
@@ -123,13 +123,14 @@ export class IncidentsPdfService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  private async renderPdf(html: string): Promise<Buffer> {
+  private async renderPdf(html: string, landscape = false): Promise<Buffer> {
     const browser = await this.getBrowserSafe();
     const page = await browser.newPage();
     try {
       await page.setContent(html, { waitUntil: "domcontentloaded" });
       const pdf = await page.pdf({
         format: "A4",
+        landscape,
         printBackground: true,
       });
       return Buffer.from(pdf);
